@@ -1,9 +1,9 @@
 package app;
 
 import config.Config;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 
 public class BotLauncher {
     public static void main(String[] args) {
@@ -12,10 +12,12 @@ public class BotLauncher {
 
         Bot bot = new Bot();
 
-        JDABuilder.createDefault(token)
+        System.setProperty("lavaplayer.youtube.country", "US");
+        System.setProperty("http.agent", "Mozilla/5.0");
+
+        JDABuilder.createDefault(token, GatewayIntent.GUILD_VOICE_STATES)
                 .setStatus(OnlineStatus.ONLINE)
                 .addEventListeners(bot)
                 .build();
-
     }
 }

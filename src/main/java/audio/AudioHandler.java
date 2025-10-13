@@ -1,4 +1,46 @@
 package audio;
 
+import com.sedmelluq.discord.lavaplayer.player.AudioConfiguration;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
+import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer;
+import net.dv8tion.jda.api.entities.Guild;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class AudioHandler {
+
+    private static final AudioHandler INSTANCE = new AudioHandler();
+    private final AudioPlayerManager playerManager;
+    private Map<Long, GuildHandler> guildHandlers = new ConcurrentHashMap<>();
+
+    private AudioHandler(){
+        this.playerManager = new DefaultAudioPlayerManager();
+
+        this.playerManager.getConfiguration().setFrameBufferFactory(NonAllocatingAudioFrameBuffer::new);
+        this.playerManager.getConfiguration().setResamplingQuality(AudioConfiguration.ResamplingQuality.MEDIUM);
+
+        AudioSourceManagers.registerRemoteSources(this.playerManager);
+    }
+
+    public static AudioHandler getInstance(){
+        return INSTANCE;
+    }
+
+    public AudioPlayerManager getPlayerManager() {
+        return playerManager;
+    }
+
+    public GuildHandler getGuildHandler(Guild guild) {
+        return guildHandlers.computeIfAbsent(guild.getIdLong(),id -> {
+            AudioPlayer player = playerManager.createPlayer();
+            player.setVolume(100);
+            GuildHandler handler = new GuildHandler(guild, player);
+            player.addListener(handler.getScheduler());
+            return handler;
+        });
+    }
 }

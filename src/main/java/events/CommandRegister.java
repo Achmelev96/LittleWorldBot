@@ -1,6 +1,7 @@
 package events;
 
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 public class CommandRegister {
@@ -9,6 +10,7 @@ public class CommandRegister {
 
         jda.updateCommands().addCommands(
                 Commands.slash("play", "Queue a track to play")
+                        .addOption(OptionType.STRING, "query", "Song name or URL", true)
                         .setGuildOnly(true),
                 Commands.slash("pause", "Pause the current track")
                         .setGuildOnly(true),
