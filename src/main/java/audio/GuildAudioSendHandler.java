@@ -9,7 +9,6 @@ import java.nio.ByteBuffer;
 public class GuildAudioSendHandler implements AudioSendHandler {
     private final AudioPlayer audioPlayer;
     private AudioFrame lastFrame;
-    private long frames;
 
     public GuildAudioSendHandler(AudioPlayer audioPlayer) {
         this.audioPlayer = audioPlayer;
@@ -23,15 +22,11 @@ public class GuildAudioSendHandler implements AudioSendHandler {
 
     @Override
     public ByteBuffer provide20MsAudio() {
-        frames++;
-        if (frames % 50 == 0) {
-            System.out.println("[AUDIO] frames sent=" + frames);
-        }
         return ByteBuffer.wrap(lastFrame.getData());
     }
 
     @Override
     public boolean isOpus() {
-        return false;
+        return true;
     }
 }

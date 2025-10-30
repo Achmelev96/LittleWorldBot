@@ -11,13 +11,13 @@ import net.dv8tion.jda.api.entities.Guild;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AudioHandler {
+public class MusicCore {
 
-    private static final AudioHandler INSTANCE = new AudioHandler();
+    private static final MusicCore INSTANCE = new MusicCore();
     private final AudioPlayerManager playerManager;
     private Map<Long, GuildHandler> guildHandlers = new ConcurrentHashMap<>();
 
-    private AudioHandler(){
+    private MusicCore(){
         this.playerManager = new DefaultAudioPlayerManager();
 
         this.playerManager.getConfiguration().setFrameBufferFactory(NonAllocatingAudioFrameBuffer::new);
@@ -26,7 +26,7 @@ public class AudioHandler {
         AudioSourceManagers.registerRemoteSources(this.playerManager);
     }
 
-    public static AudioHandler getInstance(){
+    public static MusicCore getInstance(){
         return INSTANCE;
     }
 

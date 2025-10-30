@@ -25,6 +25,19 @@ public class TrackHandler extends AudioEventAdapter {
         }
     }
 
+    public synchronized void clearQueue() {
+        queue.clear();
+    }
+
+    public synchronized void stopAll() {
+        queue.clear();
+        player.stopTrack();
+    }
+
+    /*public synchronized void pause() {
+        queue.stop();
+    }*/
+
     // for skip
     public synchronized void nextTrack() {
         AudioTrack track = queue.poll();
