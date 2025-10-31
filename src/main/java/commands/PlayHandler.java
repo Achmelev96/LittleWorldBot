@@ -50,7 +50,7 @@ public final class PlayHandler implements SlashCommand{
         var rawQuery = event.getOption("query").getAsString();
         var identifier = IdentifierBuilder.build(rawQuery);
         if (identifier == null || identifier.isBlank()) {
-            event.getHook().editOriginal("Шизоид! Это люди не придумал!").queue();
+            event.getHook().editOriginal("Пустой запрос").queue();
             return;
         }
 
