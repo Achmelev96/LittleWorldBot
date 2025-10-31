@@ -1,4 +1,4 @@
-package autocomplete;
+package commands.autocomplete;
 
 import interaction.InteractionContext;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;

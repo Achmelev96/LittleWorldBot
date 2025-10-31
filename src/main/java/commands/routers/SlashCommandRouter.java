@@ -1,5 +1,6 @@
-package commands;
+package commands.routers;
 
+import commands.CommandRegistry;
 import interaction.InteractionContext;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 

@@ -1,6 +1,6 @@
 package commands;
 
-import autocomplete.AutocompleteProvider;
+import commands.autocomplete.AutocompleteProvider;
 
 import java.util.Locale;
 import java.util.Map;

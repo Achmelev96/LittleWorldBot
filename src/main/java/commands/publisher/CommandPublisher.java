@@ -1,4 +1,4 @@
-package events;
+package commands.publisher;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.interactions.commands.OptionType;

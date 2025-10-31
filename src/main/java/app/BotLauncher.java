@@ -1,14 +1,15 @@
 package app;
 
-import autocomplete.AutocompleteRouter;
-import autocomplete.PlayQueryAutocomplete;
+import commands.routers.AutocompleteRouter;
+import commands.autocomplete.PlayQueryAutocomplete;
 import commands.*;
+import commands.routers.SlashCommandRouter;
 import config.Config;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
-import autocomplete.AutocompleteProvider;
+import commands.autocomplete.AutocompleteProvider;
 
 import java.util.List;
 

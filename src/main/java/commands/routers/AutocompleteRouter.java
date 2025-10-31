@@ -1,10 +1,10 @@
-package autocomplete;
+package commands.routers;
 
 import commands.CommandRegistry;
+import commands.autocomplete.AutocompleteProvider;
 import interaction.InteractionContext;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class AutocompleteRouter {
