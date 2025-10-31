@@ -2,9 +2,7 @@ package app;
 
 import autocomplete.AutocompleteRouter;
 import autocomplete.PlayQueryAutocomplete;
-import commands.CommandRegistry;
-import commands.PlayHandler;
-import commands.SlashCommandRouter;
+import commands.*;
 import config.Config;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -17,6 +15,9 @@ public class BotLauncher {
 
         var registry = new CommandRegistry();
         registry.registerSlash("play", new PlayHandler());
+        registry.registerSlash("leave", new LeaveHandler());
+        registry.registerSlash("join", new JoinHandler());
+        registry.registerSlash("skip", new SkipHandler());
         registry.register("play", "query", new PlayQueryAutocomplete());
 
         var slashRouter = new SlashCommandRouter(registry);

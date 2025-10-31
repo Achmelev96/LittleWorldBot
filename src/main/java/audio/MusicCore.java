@@ -4,8 +4,10 @@ import com.sedmelluq.discord.lavaplayer.player.AudioConfiguration;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
+// import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
+//import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer;
+import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import net.dv8tion.jda.api.entities.Guild;
 
 import java.util.Map;
@@ -23,7 +25,8 @@ public class MusicCore {
         this.playerManager.getConfiguration().setFrameBufferFactory(NonAllocatingAudioFrameBuffer::new);
         this.playerManager.getConfiguration().setResamplingQuality(AudioConfiguration.ResamplingQuality.MEDIUM);
 
-        AudioSourceManagers.registerRemoteSources(this.playerManager);
+        //AudioSourceManagers.registerRemoteSources(this.playerManager);
+        playerManager.registerSourceManager(new YoutubeAudioSourceManager(true));
     }
 
     public static MusicCore getInstance(){

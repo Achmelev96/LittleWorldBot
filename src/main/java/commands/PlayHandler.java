@@ -38,7 +38,7 @@ public final class PlayHandler implements SlashCommand{
         var botChannel = context.voice().botChannel();
         if (botChannel == null || botChannel.getIdLong() != userChannel.getIdLong()) {
             try {
-                audioManager.setSelfDeafened(true);
+                audioManager.setSelfDeafened(false);
                 audioManager.openAudioConnection(userChannel);
             } catch (Exception e) {
                 event.getHook().editOriginal("Не удалось подключиться к голосовому каналу").queue();
@@ -50,7 +50,7 @@ public final class PlayHandler implements SlashCommand{
         var rawQuery = event.getOption("query").getAsString();
         var identifier = IdentifierBuilder.build(rawQuery);
         if (identifier == null || identifier.isBlank()) {
-            event.getHook().editOriginal("Пустой запрос").queue();
+            event.getHook().editOriginal("Шизоид! Это люди не придумал!").queue();
             return;
         }
 

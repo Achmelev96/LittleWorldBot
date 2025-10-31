@@ -35,7 +35,7 @@ public final class JoinHandler implements SlashCommand {
 
         try {
             var audioManager = context.voice().audioManager();
-            audioManager.setSelfDeafened(true);
+            audioManager.setSelfDeafened(false);
             audioManager.openAudioConnection(userChannel);
             event.getHook().editOriginal("Захожу к тебе").queue();
         } catch (Exception e) {
