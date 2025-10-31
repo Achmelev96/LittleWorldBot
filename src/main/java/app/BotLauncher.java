@@ -7,6 +7,9 @@ import config.Config;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import autocomplete.AutocompleteProvider;
+
+import java.util.List;
 
 public class BotLauncher {
     public static void main(String[] args) {
@@ -21,7 +24,9 @@ public class BotLauncher {
         registry.register("play", "query", new PlayQueryAutocomplete());
 
         var slashRouter = new SlashCommandRouter(registry);
-        var autoCompleteRouter = new AutocompleteRouter(registry);
+        List<AutocompleteProvider> providers = List.of(
+                new PlayQueryAutocomplete());
+        var autoCompleteRouter = new AutocompleteRouter(registry, providers);
 
         BotListener listener = new BotListener(slashRouter, autoCompleteRouter);
 

@@ -51,7 +51,7 @@ public final class SkipHandler implements SlashCommand {
         if (queuedTrack == null) {
             event.getHook().editOriginal("Пропущен: " + prevTitle + ". Очередь пуста").queue();
         } else {
-            event.getHook().editOriginal("Пропущен: " + prevTitle + ". → теперь играет: " + queuedTrack).queue();
+            event.getHook().editOriginal("Пропущен: " + prevTitle + ". → теперь играет: " +  queuedTrack.getInfo().title).queue();
         }
     }
 

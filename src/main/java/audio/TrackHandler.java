@@ -39,9 +39,14 @@ public class TrackHandler extends AudioEventAdapter {
     }*/
 
     // for skip
-    public synchronized void nextTrack() {
-        AudioTrack track = queue.poll();
-        player.startTrack(track, false);
+    public AudioTrack nextTrack() {
+        var next = queue.poll();
+        if (next == null) {
+            player.stopTrack();
+            return null;
+        }
+        player.startTrack(next, false);
+        return next;
     }
 
     @Override

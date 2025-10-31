@@ -4,35 +4,32 @@ import commands.CommandRegistry;
 import interaction.InteractionContext;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class AutocompleteRouter {
 
     private final CommandRegistry registry;
+    private final List<AutocompleteProvider> providers;
 
-    public AutocompleteRouter(CommandRegistry registry) {
+    public AutocompleteRouter(CommandRegistry registry, List<AutocompleteProvider> providers) {
         this.registry = registry;
+        this.providers = providers;
     }
 
     public void route(CommandAutoCompleteInteractionEvent event) {
-        if (event.getFocusedOption() == null) {
-            event.replyChoices().queue();
-            return;
-        }
-
-        String commandName = event.getName();
-        String optionName  = event.getFocusedOption().getName();
-
-        var providerOpt = registry.findAutocomplete(commandName, optionName);
-        if (providerOpt.isEmpty()) {
-            event.replyChoices().queue();
-            return;
-        }
-
+        var name = event.getName();
+        var focused = event.getFocusedOption();
+        var optionName = focused.getName();
         var context = InteractionContext.from(event);
 
-        try {
-            providerOpt.get().handle(event, context);
-        } catch (Exception e) {
-            event.replyChoices().queue();
+        for (var entry : providers) {
+            if (entry.supports(name, optionName)) {
+                entry.handle(event, context);
+                return;
+            }
         }
+
+        event.replyChoices().queue();
     }
 }
