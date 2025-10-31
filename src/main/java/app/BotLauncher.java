@@ -6,6 +6,7 @@ import commands.*;
 import config.Config;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import autocomplete.AutocompleteProvider;
 
@@ -30,12 +31,10 @@ public class BotLauncher {
 
         BotListener listener = new BotListener(slashRouter, autoCompleteRouter);
 
-        //System.setProperty("lavaplayer.youtube.country", "US");
-        //System.setProperty("http.agent", "Mozilla/5.0");
-
         JDABuilder.createDefault(token, GatewayIntent.GUILD_VOICE_STATES)
                 .setStatus(OnlineStatus.ONLINE)
                 .addEventListeners(listener)
+                .setActivity(Activity.watching("за своим манямирком"))
                 .build();
     }
 }

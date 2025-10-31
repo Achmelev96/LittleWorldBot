@@ -2,14 +2,20 @@ package commands;
 
 import audio.MusicCore;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import interaction.InteractionContext;
 import commands.urlBuild.IdentifierBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
-public final class PlayHandler implements SlashCommand{
+import java.time.Duration;
+
+public final class PlayHandler implements SlashCommand {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PlayHandler.class);
 
     @Override
     public String name() {
@@ -21,7 +27,7 @@ public final class PlayHandler implements SlashCommand{
         event.deferReply(false).queue();
 
         var userChannel = context.voice().userChannel();
-        if(userChannel == null) {
+        if (userChannel == null) {
             event.getHook().editOriginal("А куда мне зайти?").queue();
             return;
         }
@@ -48,36 +54,60 @@ public final class PlayHandler implements SlashCommand{
         }
 
         var rawQuery = event.getOption("query").getAsString();
+
+        //log
+        log.info("[play] rawQuery='{}' user={} guild={}", rawQuery, context.user().getId(), context.guild().getId());
+
         var identifier = IdentifierBuilder.build(rawQuery);
+
+        //log
+        log.info("[play] identifier='{}' (built from rawQuery)", identifier);
+
         if (identifier == null || identifier.isBlank()) {
             event.getHook().editOriginal("Пустой запрос").queue();
             return;
         }
 
-
+        // +log
+        log.info("[play] loadItemOrdered guild={} identifier='{}'", guild.getId(), identifier);
         core.getPlayerManager().loadItemOrdered(guild, identifier, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack track) {
+                //log
+                var info = track.getInfo();
+                log.info("[play][result] TrackLoaded title='{}' author='{}' uri='{}' lengthMs={}",
+                        info.title, info.author, info.uri, info.length);
+
                 guildHandler.getScheduler().queue(track);
-                event.getHook().editOriginal("Добавил в очередь: " +  track.getInfo().title).queue();
+                audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+                event.getHook().editOriginal("Добавил в очередь: " + track.getInfo().title).queue();
             }
 
             @Override
             public void playlistLoaded(AudioPlaylist playlist) {
+                //log
+                log.info("[play][result] PlaylistLoaded name='{}' tracks={}", playlist.getName(), playlist.getTracks().size());
+
                 AudioTrack selected = playlist.getSelectedTrack();
-                if (selected != null || !playlist.getTracks().isEmpty()) {
+                if (selected == null && !playlist.getTracks().isEmpty()) {
                     selected = playlist.getTracks().get(0);
                 }
 
                 if (selected != null) {
+                    //log
+                    var info = selected.getInfo();
+                    log.info("[play][result] PlaylistSelected title='{}' uri='{}'", info.title, info.uri);
+
                     guildHandler.getScheduler().queue(selected);
+                    audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
                     event.getHook().editOriginal("Добавил из плейлиста: " + selected.getInfo().title).queue();
                 } else {
                     for (AudioTrack track : playlist.getTracks()) {
                         guildHandler.getScheduler().queue(track);
                     }
+                    audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
                     event.getHook().editOriginal(
-                            "Добавил плейлись: " + playlist.getName() + " (" + playlist.getTracks().size() + " треков)"
+                            "Добавил плейлист: " + playlist.getName() + " (" + playlist.getTracks().size() + " треков)"
                     ).queue();
                 }
             }

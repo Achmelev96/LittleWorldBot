@@ -49,8 +49,10 @@ public final class SkipHandler implements SlashCommand {
 
         AudioTrack queuedTrack = player.getPlayingTrack();
         if (queuedTrack == null) {
+            MusicCore.getInstance().scheduleAfkDisconnect(context.guild().getIdLong(), java.time.Duration.ofHours(1));
             event.getHook().editOriginal("Пропущен: " + prevTitle + ". Очередь пуста").queue();
         } else {
+            MusicCore.getInstance().scheduleAfkDisconnect(context.guild().getIdLong(), java.time.Duration.ofHours(1));
             event.getHook().editOriginal("Пропущен: " + prevTitle + ". → теперь играет: " +  queuedTrack.getInfo().title).queue();
         }
     }

@@ -34,10 +34,6 @@ public class TrackHandler extends AudioEventAdapter {
         player.stopTrack();
     }
 
-    /*public synchronized void pause() {
-        queue.stop();
-    }*/
-
     // for skip
     public AudioTrack nextTrack() {
         var next = queue.poll();
@@ -52,7 +48,25 @@ public class TrackHandler extends AudioEventAdapter {
     @Override
     public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
         if (endReason.mayStartNext) {
-            nextTrack();
+            var started = nextTrack();
+            if (started == null) {
+                audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player, java.time.Duration.ofHours(1));
+            }
+        } else {
+            if (player.getPlayingTrack() == null && queue.isEmpty()) {
+                audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player, java.time.Duration.ofHours(1));
+            }
         }
     }
+
+    public boolean isQueueEmpty() {
+        return queue.isEmpty();
+    }
+
+    @Override
+    public void onTrackStart(AudioPlayer player, AudioTrack track) {
+        audio.MusicCore.getInstance().cancelAfkDisconnectByPlayer(player);
+    }
+
+
 }

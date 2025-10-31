@@ -27,6 +27,7 @@ public final class LeaveHandler implements SlashCommand {
             guildHandler.getScheduler().stopAll();
             context.voice().audioManager().setSendingHandler(null);
             context.voice().audioManager().closeAudioConnection();
+            audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
 
             event.getHook().editOriginal("Ладно, ухожу").queue();
         } catch (Exception e) {
