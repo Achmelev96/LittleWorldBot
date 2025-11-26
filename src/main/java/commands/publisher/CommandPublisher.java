@@ -10,7 +10,7 @@ public class CommandPublisher {
 
         jda.updateCommands().addCommands(
                 Commands.slash("play", "Queue a track to play")
-                        .addOption(OptionType.STRING, "query", "Song name or URL", true, true)
+                        .addOption(OptionType.STRING, "query", "Song name, URL or Playlist", true, true)
                         .setGuildOnly(true),
                 Commands.slash("skip", "instant transition to the next track in queue")
                         .setGuildOnly(true),
