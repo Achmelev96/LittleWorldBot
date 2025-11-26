@@ -1,5 +1,6 @@
 package commands.autocomplete;
 
+import commands.urlBuild.UrlUtils;
 import interaction.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
@@ -12,6 +13,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
 import audio.MusicCore;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,9 +39,16 @@ public class PlayQueryAutocomplete implements AutocompleteProvider {
             return;
         }
 
-        final AudioPlayerManager manager = MusicCore.getInstance().getPlayerManager();
+        URI uri = UrlUtils.tryParse(input);
+        if (uri != null && uri.getScheme() != null) {
+            // Это URL → отключаем автокомплит
+            event.replyChoices().queue();
+            return;
+        }
 
+        final AudioPlayerManager manager = MusicCore.getInstance().getPlayerManager();
         final String query = "ytsearch:" + input;
+
 
         manager.loadItem(query, new AudioLoadResultHandler() {
             @Override

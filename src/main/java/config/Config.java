@@ -18,8 +18,4 @@ public final class Config {
     public static String get(String key) {
         return properties.getProperty(key);
     }
-
-    public static String getOrDefault(String key, String defaultValue) {
-        return properties.getProperty(key, defaultValue);
-    }
 }

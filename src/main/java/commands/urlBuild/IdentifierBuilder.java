@@ -13,10 +13,13 @@ public final class IdentifierBuilder {
 
         URI uri = UrlUtils.tryParse(trimmed);
         if (uri == null || uri.getScheme() == null) {
-            return "ytmsearch:" + trimmed;
+            return "ytsearch:" + trimmed;
         }
 
         if (YouTubeNormalizer.isYoutube(uri)) {
+            if (UrlUtils.getPlaylistId(uri) != null) {
+                return trimmed;
+            }
             return YouTubeNormalizer.normalize(uri);
         }
         return trimmed;

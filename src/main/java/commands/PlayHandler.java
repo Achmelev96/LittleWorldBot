@@ -64,24 +64,24 @@ public final class PlayHandler implements SlashCommand {
 
             @Override
             public void playlistLoaded(AudioPlaylist playlist) {
-                AudioTrack selected = playlist.getSelectedTrack();
-                if (selected == null && !playlist.getTracks().isEmpty()) {
-                    selected = playlist.getTracks().get(0);
+                if (playlist.isSearchResult()) {
+                    AudioTrack first = playlist.getTracks().get(0);
+                    guildHandler.getScheduler().queue(first);
+                    audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+                    event.getHook().editOriginal("Нашел: " + first.getInfo().title).queue();
+                    return;
                 }
 
-                if (selected != null) {
-                    guildHandler.getScheduler().queue(selected);
-                    audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
-                    event.getHook().editOriginal("Добавил из плейлиста: " + selected.getInfo().title).queue();
-                } else {
-                    for (AudioTrack track : playlist.getTracks()) {
-                        guildHandler.getScheduler().queue(track);
-                    }
-                    audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
-                    event.getHook().editOriginal(
-                            "Добавил плейлист: " + playlist.getName() + " (" + playlist.getTracks().size() + " треков)"
-                    ).queue();
+                int trackCounter = 0;
+                for (AudioTrack track : playlist.getTracks()) {
+                    guildHandler.getScheduler().queue(track);
+                    trackCounter++;
                 }
+
+                audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+                event.getHook().editOriginal(
+                        "Добавил плейлист: " + playlist.getName() + " (" + trackCounter + " треков)"
+                ).queue();
             }
 
             @Override

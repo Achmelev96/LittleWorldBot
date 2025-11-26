@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-final class UrlUtils {
+public final class UrlUtils {
     private UrlUtils() {}
 
     static URI tryParse(String input) {
@@ -20,6 +20,24 @@ final class UrlUtils {
     static String getHostLower(URI uri) {
         String host = uri.getHost();
         return host == null ? "" : host.toLowerCase();
+    }
+
+    public static String getPlaylistId(URI uri) {
+        return getQueryParam(uri, "list");
+    }
+
+    static boolean isPlaylistUrl(URI uri) {
+        String playlistId = getPlaylistId(uri);
+        if (playlistId != null) return true;
+
+        String path = getPathOrEmpty(uri);
+        return path.startsWith("/playlist");
+    }
+
+    static String getQueryParam(URI uri, String key) {
+        if (uri == null) return null;
+        Map<String, String> params = parseQuery(uri.getQuery());
+        return params.get(key);
     }
 
     static String getPathOrEmpty(URI uri) {
