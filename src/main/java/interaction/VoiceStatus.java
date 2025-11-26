@@ -4,16 +4,16 @@ import net.dv8tion.jda.api.managers.AudioManager;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
 
-public final class VoiceContext {
+public final class VoiceStatus {
     private final Guild guild;
     private final AudioManager audioManager;
     private final AudioChannelUnion userChannel;
     private final AudioChannelUnion botChannel;
 
-    public VoiceContext(Guild guild,
-                        AudioManager audioManager,
-                        AudioChannelUnion userChannel,
-                        AudioChannelUnion botChannel) {
+    public VoiceStatus(Guild guild,
+                       AudioManager audioManager,
+                       AudioChannelUnion userChannel,
+                       AudioChannelUnion botChannel) {
         this.guild = guild;
         this.audioManager = audioManager;
         this.userChannel = userChannel;

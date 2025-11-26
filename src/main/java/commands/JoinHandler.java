@@ -1,6 +1,6 @@
 package commands;
 
-import interaction.InteractionContext;
+import interaction.CurrentStatus;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
@@ -11,7 +11,7 @@ public final class JoinHandler implements SlashCommand {
         return "join";
     }
 
-    public void handle(SlashCommandInteractionEvent event, InteractionContext context) {
+    public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
         event.deferReply(true).queue();
 
         var guild = context.guild();
@@ -44,5 +44,4 @@ public final class JoinHandler implements SlashCommand {
             e.printStackTrace();
         }
     }
-
 }

@@ -1,6 +1,6 @@
 package commands.autocomplete;
 
-import interaction.InteractionContext;
+import interaction.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
 
@@ -27,7 +27,7 @@ public class PlayQueryAutocomplete implements AutocompleteProvider {
     }
 
     @Override
-    public void handle(CommandAutoCompleteInteractionEvent event, InteractionContext context) {
+    public void handle(CommandAutoCompleteInteractionEvent event, CurrentStatus context) {
         final String input = Optional.of(event.getFocusedOption().getValue())
                 .map(String::trim)
                 .orElse("");

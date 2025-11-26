@@ -5,7 +5,7 @@ import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import interaction.InteractionContext;
+import interaction.CurrentStatus;
 import commands.urlBuild.IdentifierBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
@@ -17,7 +17,7 @@ public final class PlayHandler implements SlashCommand {
     }
 
     @Override
-    public void handle(SlashCommandInteractionEvent event, InteractionContext context) {
+    public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
         event.deferReply(false).queue();
 
         var userChannel = context.voice().userChannel();

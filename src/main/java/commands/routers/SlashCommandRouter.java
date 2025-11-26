@@ -1,7 +1,7 @@
 package commands.routers;
 
 import commands.CommandRegistry;
-import interaction.InteractionContext;
+import interaction.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 public class SlashCommandRouter {
@@ -13,7 +13,7 @@ public class SlashCommandRouter {
 
     public void route(SlashCommandInteractionEvent event) {
         var name = event.getName();
-        var context = InteractionContext.from(event);
+        var context = CurrentStatus.from(event);
 
         var opt = registry.getSlash(name);
         if (opt.isPresent()) {

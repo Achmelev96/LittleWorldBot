@@ -12,15 +12,15 @@ import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
 
 import java.util.Locale;
 
-public final class InteractionContext {
+public final class CurrentStatus {
     private final JDA jda;
     private final Guild guild;
     private final Member member;
     private final User user;
     private final Locale locale;
-    private final VoiceContext voice;
+    private final VoiceStatus voice;
 
-    private InteractionContext(JDA jda, Guild guild, Member member, User user, Locale locale, VoiceContext voice) {
+    private CurrentStatus(JDA jda, Guild guild, Member member, User user, Locale locale, VoiceStatus voice) {
         this.jda = jda;
         this.guild = guild;
         this.member = member;
@@ -34,17 +34,17 @@ public final class InteractionContext {
     public Member member() { return member; }
     public User user() { return user; }
     public Locale locale() { return locale; }
-    public VoiceContext voice() { return voice; }
+    public VoiceStatus voice() { return voice; }
 
-    public static InteractionContext from(SlashCommandInteractionEvent event) {
+    public static CurrentStatus from(SlashCommandInteractionEvent event) {
         return fromGeneric(event);
     }
 
-    public static InteractionContext from(CommandAutoCompleteInteractionEvent event) {
+    public static CurrentStatus from(CommandAutoCompleteInteractionEvent event) {
         return fromGeneric(event);
     }
 
-    private static InteractionContext fromGeneric(GenericInteractionCreateEvent event) {
+    private static CurrentStatus fromGeneric(GenericInteractionCreateEvent event) {
         var jda = event.getJDA();
         var guild = event.getGuild();
         var member = event.getMember();
@@ -54,12 +54,12 @@ public final class InteractionContext {
                 : Locale.ROOT;
 
         var voice = buildVoiceContext(guild, member);
-        return new InteractionContext(jda, guild, member, user, locale, voice);
+        return new CurrentStatus(jda, guild, member, user, locale, voice);
     }
 
-    private static VoiceContext buildVoiceContext(Guild guild, Member member) {
+    private static VoiceStatus buildVoiceContext(Guild guild, Member member) {
         if (guild == null) {
-            return new VoiceContext(null, null, null, null);
+            return new VoiceStatus(null, null, null, null);
         }
         AudioManager audioManager = guild.getAudioManager();
 
@@ -70,6 +70,6 @@ public final class InteractionContext {
 
         AudioChannelUnion botChannel = audioManager.getConnectedChannel();
 
-        return new VoiceContext(guild, audioManager, userChannel, botChannel);
+        return new VoiceStatus(guild, audioManager, userChannel, botChannel);
     }
 }

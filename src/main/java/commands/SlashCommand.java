@@ -1,9 +1,9 @@
 package commands;
 
-import interaction.InteractionContext;
+import interaction.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 public interface SlashCommand {
     String name();
-    void handle(SlashCommandInteractionEvent event, InteractionContext context);
+    void handle(SlashCommandInteractionEvent event, CurrentStatus context);
 }

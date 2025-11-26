@@ -1,7 +1,7 @@
 package commands;
 
 import audio.MusicCore;
-import interaction.InteractionContext;
+import interaction.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 public final class LeaveHandler implements SlashCommand {
@@ -12,7 +12,7 @@ public final class LeaveHandler implements SlashCommand {
     }
 
     @Override
-    public void handle(SlashCommandInteractionEvent event, InteractionContext context) {
+    public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
         event.deferReply(true).queue();
 
         if (context.voice().botChannel() == null) {

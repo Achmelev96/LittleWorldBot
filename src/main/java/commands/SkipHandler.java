@@ -1,7 +1,7 @@
 package commands;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import interaction.InteractionContext;
+import interaction.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import audio.MusicCore;
 
@@ -10,24 +10,20 @@ public final class SkipHandler implements SlashCommand {
     public String name(){
         return "skip";
     }
-    public void handle(SlashCommandInteractionEvent event, InteractionContext context) {
+
+    public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
         event.deferReply(true).queue();
 
         var botChannel = context.voice().botChannel();
         var userChannel = context.voice().userChannel();
 
-        if (botChannel == null) {
-            event.getHook().editOriginal("Я не в голосовом канале").queue();
-            return;
-        }
-
         if (userChannel == null) {
-            event.getHook().editOriginal("Эту команду можно использовать только находять в голосовом канале").queue();
+            event.getHook().editOriginal("Команды доступны для использованиятолько из голосового канала").queue();
             return;
         }
 
         if (botChannel == null || botChannel.getIdLong() != userChannel.getIdLong()) {
-            event.getHook().editOriginal("Для этого тебе нужно находиться со мной в одном канале").queue();
+            event.getHook().editOriginal("Ты и я должны находиться в одном голосовом канале").queue();
             return;
         }
 
