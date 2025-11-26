@@ -35,7 +35,7 @@ public class BotLauncher {
         JDABuilder.createDefault(token, GatewayIntent.GUILD_VOICE_STATES)
                 .setStatus(OnlineStatus.ONLINE)
                 .addEventListeners(listener)
-                .setActivity(Activity.watching("за своим манямирком"))
+                .setActivity(Activity.listening("/play"))
                 .build();
     }
 }

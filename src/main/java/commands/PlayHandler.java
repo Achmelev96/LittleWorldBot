@@ -59,7 +59,10 @@ public final class PlayHandler implements SlashCommand {
             public void trackLoaded(AudioTrack track) {
                 guildHandler.getScheduler().queue(track);
                 audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
-                event.getHook().editOriginal("Добавил в очередь: " + track.getInfo().title).queue();
+
+                String title = track.getInfo().title;
+                String duration = formatDuration(track.getInfo().length);
+                event.getHook().editOriginal("Добавил в очередь: " + title + "** `" + duration + "`").queue();
             }
 
             @Override
@@ -102,4 +105,17 @@ public final class PlayHandler implements SlashCommand {
             }
         });
     }
+
+    private static String formatDuration(long ms) {
+        long totalSeconds = ms / 1000;
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+
+        if (hours > 0)
+            return String.format("%d:%02d:%02d", hours, minutes, seconds);
+        else
+            return String.format("%d:%02d", minutes, seconds);
+    }
+
 }

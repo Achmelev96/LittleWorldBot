@@ -9,7 +9,7 @@ import java.util.Map;
 public final class UrlUtils {
     private UrlUtils() {}
 
-    static URI tryParse(String input) {
+    public static URI tryParse(String input) {
         try {
             return URI.create(input);
         } catch (Exception e) {
