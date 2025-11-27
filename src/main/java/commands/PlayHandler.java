@@ -21,7 +21,6 @@ public final class PlayHandler extends BaseMusicCommand {
     public void handle(SlashCommandInteractionEvent event, CurrentStatus status) {
         event.deferReply(false).queue();
 
-        if (isSameChannel)
         if (!isUserInVoice(status)) {
             event.getHook().editOriginal("А куда мне зайти?").queue();
             return;
