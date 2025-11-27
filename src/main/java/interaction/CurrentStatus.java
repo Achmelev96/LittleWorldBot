@@ -53,11 +53,11 @@ public final class CurrentStatus {
                 ? Locale.forLanguageTag(event.getUserLocale().getLocale())
                 : Locale.ROOT;
 
-        var voice = buildVoiceContext(guild, member);
+        var voice = buildVoiceStatus(guild, member);
         return new CurrentStatus(jda, guild, member, user, locale, voice);
     }
 
-    private static VoiceStatus buildVoiceContext(Guild guild, Member member) {
+    private static VoiceStatus buildVoiceStatus(Guild guild, Member member) {
         if (guild == null) {
             return new VoiceStatus(null, null, null, null);
         }

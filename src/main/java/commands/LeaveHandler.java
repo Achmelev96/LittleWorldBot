@@ -21,14 +21,6 @@ public final class LeaveHandler extends BaseMusicCommand {
         }
 
         try {
-            /*var core = MusicCore.getInstance();
-            var guildHandler = core.getGuildHandler(event.getGuild());
-
-            guildHandler.getScheduler().stopAll();
-            context.voice().audioManager().setSendingHandler(null);
-            context.voice().audioManager().closeAudioConnection();
-            audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
-*/
             var guildHandler = core.getGuildHandler(status.guild());
             guildHandler.getScheduler().stopAll();
             disconnectFromVoice(status);

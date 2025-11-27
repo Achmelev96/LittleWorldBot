@@ -41,7 +41,6 @@ public class PlayQueryAutocomplete implements AutocompleteProvider {
 
         URI uri = UrlUtils.tryParse(input);
         if (uri != null && uri.getScheme() != null) {
-            // Это URL → отключаем автокомплит
             event.replyChoices().queue();
             return;
         }

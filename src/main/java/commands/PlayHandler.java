@@ -21,6 +21,7 @@ public final class PlayHandler extends BaseMusicCommand {
     public void handle(SlashCommandInteractionEvent event, CurrentStatus status) {
         event.deferReply(false).queue();
 
+        if (isSameChannel)
         if (!isUserInVoice(status)) {
             event.getHook().editOriginal("А куда мне зайти?").queue();
             return;
@@ -39,20 +40,11 @@ public final class PlayHandler extends BaseMusicCommand {
             audioManager.setSendingHandler(guildHandler.getAudioSendHandler());
         }
 
-        //var userChannel = status.voice().userChannel();
-        //var botChannel = status.voice().botChannel();
         if (!isBotUserInSameChannel(status)) {
             if (!connectToUserVoice(status)) {
                 event.getHook().editOriginal("Не удалось подключиться к голосовому каналу").queue();
-            }
-            /*try {
-                audioManager.setSelfDeafened(false);
-                audioManager.openAudioConnection(userChannel);
-            } catch (Exception e) {
-                event.getHook().editOriginal("Не удалось подключиться к голосовому каналу").queue();
-                e.printStackTrace();
                 return;
-            }*/
+            }
         }
 
         var rawQuery = event.getOption("query").getAsString();
