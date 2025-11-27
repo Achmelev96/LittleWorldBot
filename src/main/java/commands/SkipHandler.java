@@ -17,6 +17,7 @@ public final class SkipHandler extends BaseMusicCommand {
 
         if (!isBotUserInSameChannel(status)) {
             event.getHook().editOriginal("Команды доступны только из голосового канала").queue();
+            return;
         }
 
         var guild     = status.guild();
@@ -41,11 +42,11 @@ public final class SkipHandler extends BaseMusicCommand {
             duration = TrackUtils.formatDuration(queuedTrack.getInfo().length);
         }
 
+        MusicCore.getInstance().scheduleAfkDisconnect(status.guild().getIdLong(), java.time.Duration.ofHours(1));
+
         if (queuedTrack == null) {
-            MusicCore.getInstance().scheduleAfkDisconnect(status.guild().getIdLong(), java.time.Duration.ofHours(1));
             event.getHook().editOriginal("Пропущен: " + prevTitle + ". Очередь пуста").queue();
         } else {
-            MusicCore.getInstance().scheduleAfkDisconnect(status.guild().getIdLong(), java.time.Duration.ofHours(1));
             event.getHook().editOriginal("Пропущен: " + prevTitle + ". → теперь играет: " +
                     queuedTrack.getInfo().title + "** `" + duration + "`").queue();
         }

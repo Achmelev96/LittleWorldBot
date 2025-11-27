@@ -1,20 +1,16 @@
 package commands.routers;
 
 import commands.CommandRegistry;
-import commands.autocomplete.AutocompleteProvider;
 import interaction.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 
-import java.util.List;
 
 public class AutocompleteRouter {
 
     private final CommandRegistry registry;
-    private final List<AutocompleteProvider> providers;
 
-    public AutocompleteRouter(CommandRegistry registry, List<AutocompleteProvider> providers) {
+    public AutocompleteRouter(CommandRegistry registry){
         this.registry = registry;
-        this.providers = providers;
     }
 
     public void route(CommandAutoCompleteInteractionEvent event) {
@@ -23,13 +19,10 @@ public class AutocompleteRouter {
         var optionName = focused.getName();
         var context = CurrentStatus.from(event);
 
-        for (var entry : providers) {
-            if (entry.supports(name, optionName)) {
-                entry.handle(event, context);
-                return;
-            }
-        }
-
-        event.replyChoices().queue();
+        registry.findAutocomplete(name, optionName)
+                .ifPresentOrElse(
+                        provider -> provider.handle(event, context),
+                        () -> event.replyChoices().queue()
+                );
     }
 }
