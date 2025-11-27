@@ -1,6 +1,7 @@
 package commands;
 
 import audio.MusicCore;
+import audio.TrackUtils;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
@@ -9,7 +10,7 @@ import interaction.CurrentStatus;
 import commands.urlBuild.IdentifierBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
-public final class PlayHandler implements SlashCommand {
+public final class PlayHandler extends BaseMusicCommand {
 
     @Override
     public String name() {
@@ -17,34 +18,41 @@ public final class PlayHandler implements SlashCommand {
     }
 
     @Override
-    public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
+    public void handle(SlashCommandInteractionEvent event, CurrentStatus status) {
         event.deferReply(false).queue();
 
-        var userChannel = context.voice().userChannel();
-        if (userChannel == null) {
+        if (!isUserInVoice(status)) {
             event.getHook().editOriginal("А куда мне зайти?").queue();
             return;
         }
 
-        var core = MusicCore.getInstance();
-        var guild = context.guild();
-        var guildHandler = core.getGuildHandler(guild);
+        if (canBotJoin(status)) {
+            event.getHook().editOriginal("У меня нет прав, чтобы зайти в голосовой канал").queue();
+            return;
+        }
 
-        var audioManager = context.voice().audioManager();
+        var core = MusicCore.getInstance();
+        var guild = status.guild();
+        var guildHandler = core.getGuildHandler(guild);
+        var audioManager = status.voice().audioManager();
         if (audioManager.getSendingHandler() == null) {
             audioManager.setSendingHandler(guildHandler.getAudioSendHandler());
         }
 
-        var botChannel = context.voice().botChannel();
-        if (botChannel == null || botChannel.getIdLong() != userChannel.getIdLong()) {
-            try {
+        //var userChannel = status.voice().userChannel();
+        //var botChannel = status.voice().botChannel();
+        if (!isBotUserInSameChannel(status)) {
+            if (!connectToUserVoice(status)) {
+                event.getHook().editOriginal("Не удалось подключиться к голосовому каналу").queue();
+            }
+            /*try {
                 audioManager.setSelfDeafened(false);
                 audioManager.openAudioConnection(userChannel);
             } catch (Exception e) {
                 event.getHook().editOriginal("Не удалось подключиться к голосовому каналу").queue();
                 e.printStackTrace();
                 return;
-            }
+            }*/
         }
 
         var rawQuery = event.getOption("query").getAsString();
@@ -58,10 +66,10 @@ public final class PlayHandler implements SlashCommand {
             @Override
             public void trackLoaded(AudioTrack track) {
                 guildHandler.getScheduler().queue(track);
-                audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+                audio.MusicCore.getInstance().cancelAfkDisconnect(status.guild().getIdLong());
 
                 String title = track.getInfo().title;
-                String duration = formatDuration(track.getInfo().length);
+                String duration = TrackUtils.formatDuration(track.getInfo().length);
                 event.getHook().editOriginal("Добавил в очередь: " + title + "** `" + duration + "`").queue();
             }
 
@@ -70,7 +78,7 @@ public final class PlayHandler implements SlashCommand {
                 if (playlist.isSearchResult()) {
                     AudioTrack first = playlist.getTracks().get(0);
                     guildHandler.getScheduler().queue(first);
-                    audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+                    audio.MusicCore.getInstance().cancelAfkDisconnect(status.guild().getIdLong());
                     event.getHook().editOriginal("Нашел: " + first.getInfo().title).queue();
                     return;
                 }
@@ -81,7 +89,7 @@ public final class PlayHandler implements SlashCommand {
                     trackCounter++;
                 }
 
-                audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+                audio.MusicCore.getInstance().cancelAfkDisconnect(status.guild().getIdLong());
                 event.getHook().editOriginal(
                         "Добавил плейлист: " + playlist.getName() + " (" + trackCounter + " треков)"
                 ).queue();
@@ -105,17 +113,4 @@ public final class PlayHandler implements SlashCommand {
             }
         });
     }
-
-    private static String formatDuration(long ms) {
-        long totalSeconds = ms / 1000;
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
-
-        if (hours > 0)
-            return String.format("%d:%02d:%02d", hours, minutes, seconds);
-        else
-            return String.format("%d:%02d", minutes, seconds);
-    }
-
 }

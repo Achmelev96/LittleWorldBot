@@ -1,47 +1,53 @@
 package commands;
 
 import interaction.CurrentStatus;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
-public final class JoinHandler implements SlashCommand {
+public final class JoinHandler extends BaseMusicCommand {
 
     @Override
     public String name() {
         return "join";
     }
 
-    public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
+    public void handle(SlashCommandInteractionEvent event, CurrentStatus status) {
         event.deferReply(true).queue();
 
-        var guild = context.guild();
-        var self = guild != null ? guild.getSelfMember() : null;
-        var userChannel = context.voice().userChannel();
-        if (userChannel == null) {
+        //var guild = status.guild();
+        //var self = guild != null ? guild.getSelfMember() : null;
+        //var userChannel = status.voice().userChannel();
+        if (!isUserInVoice(status)) {
             event.getHook().editOriginal("А куда зайти?").queue();
             return;
         }
 
-        var botChannel = context.voice().botChannel();
-        if (botChannel != null && botChannel.getIdLong() == userChannel.getIdLong()) {
+        //var botChannel = status.voice().botChannel();
+        if (isBotUserInSameChannel(status)) {
             event.getHook().editOriginal("Уже тут").queue();
             return;
         }
 
-        if (self != null && !self.hasPermission(userChannel, Permission.VOICE_CONNECT)) {
+        if (canBotJoin(status)) {
             event.getHook().editOriginal("У меня нету прав на подключение к этому каналу").queue();
             return;
         }
 
+        if  (!connectToUserVoice(status)) {
+            event.getHook().editOriginal("Не могу подключиться к тебе").queue();
+            return;
+        } else {
+            event.getHook().editOriginal("Захожу к тебе").queue();
+        }
+        /*
         try {
-            var audioManager = context.voice().audioManager();
+            var audioManager = status.voice().audioManager();
             audioManager.setSelfDeafened(false);
             audioManager.openAudioConnection(userChannel);
-            audio.MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+            audio.MusicCore.getInstance().cancelAfkDisconnect(status.guild().getIdLong());
             event.getHook().editOriginal("Захожу к тебе").queue();
         } catch (Exception e) {
             event.getHook().editOriginal("Не могу подключиться к тебе").queue();
             e.printStackTrace();
-        }
+        }*/
     }
 }
