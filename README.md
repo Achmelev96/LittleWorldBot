@@ -1,7 +1,7 @@
 ﻿# 🎧 LittleWorldBot
 
 A multifunctional Discord bot featuring music playback, queue control, autocomplete suggestions, and a clean modular command architecture.  
-Built with **Java 17+, JDA, and LavaPlayer**.
+Built with **Java 25+, JDA, and LavaPlayer**.
 
 ---
 
@@ -10,7 +10,6 @@ Built with **Java 17+, JDA, and LavaPlayer**.
 ### 🎵 Music Commands
 - `/play` — plays a url, track or playlist
 - `/skip` — skips the current track
-- `/join` — connects to your voice channel
 - `/leave` — disconnects the bot
 - Currently supports **YouTube** as the audio source
 
@@ -37,7 +36,7 @@ Built with **Java 17+, JDA, and LavaPlayer**.
 ## 🚀 Installation & Setup
 
 ### 1. Requirements
-- **Java 17+**
+- **Java 25+**
 - **Maven**
 - **Discord Bot Token**
 

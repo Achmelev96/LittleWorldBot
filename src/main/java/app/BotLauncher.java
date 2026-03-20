@@ -1,12 +1,13 @@
 package app;
 
+import club.minnced.discord.jdave.interop.JDaveSessionFactory;
+import commands.publisher.CommandPublisher;
 import commands.routers.AutocompleteRouter;
-import commands.autocomplete.PlayQueryAutocomplete;
-import commands.*;
 import commands.routers.SlashCommandRouter;
 import config.Config;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.audio.AudioModuleConfig;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
@@ -15,13 +16,7 @@ public class BotLauncher {
 
         String token = Config.get("DISCORD_TOKEN");
 
-        var registry = new CommandRegistry();
-        registry.registerSlash("play", new PlayHandler());
-        registry.registerSlash("leave", new LeaveHandler());
-        registry.registerSlash("join", new JoinHandler());
-        registry.registerSlash("skip", new SkipHandler());
-        registry.register("play", "query", new PlayQueryAutocomplete());
-
+        var registry = CommandPublisher.buildRegistry();
         var slashRouter = new SlashCommandRouter(registry);
         var autoCompleteRouter = new AutocompleteRouter(registry);
 
@@ -29,6 +24,8 @@ public class BotLauncher {
 
         JDABuilder.createDefault(token, GatewayIntent.GUILD_VOICE_STATES)
                 .setStatus(OnlineStatus.ONLINE)
+                .setAudioModuleConfig(new AudioModuleConfig()
+                        .withDaveSessionFactory(new JDaveSessionFactory()))
                 .addEventListeners(listener)
                 .setActivity(Activity.listening("/play"))
                 .build();

@@ -10,8 +10,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>21</maven.compiler.release>
-        <jda.version>5.6.1</jda.version>
+        <maven.compiler.release>25</maven.compiler.release>
+        <jda.version>6.3.2</jda.version>
     </properties>
 
     <dependencies>
@@ -19,6 +19,36 @@
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
             <version>${jda.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-api</artifactId>
+            <version>0.1.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-native-linux-x86-64</artifactId>
+            <version>0.1.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-native-linux-aarch64</artifactId>
+            <version>0.1.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-native-win-x86-64</artifactId>
+            <version>0.1.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-native-darwin</artifactId>
+            <version>0.1.7</version>
         </dependency>
 
         <dependency>

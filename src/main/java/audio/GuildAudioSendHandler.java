@@ -15,13 +15,17 @@ public class GuildAudioSendHandler implements AudioSendHandler {
     }
 
     @Override
-    public boolean canProvide() {
+    public synchronized boolean canProvide() {
         lastFrame = audioPlayer.provide();
         return lastFrame != null;
     }
 
+
     @Override
-    public ByteBuffer provide20MsAudio() {
+    public synchronized ByteBuffer provide20MsAudio() {
+        if (lastFrame == null) {
+            return null;
+        }
         return ByteBuffer.wrap(lastFrame.getData());
     }
 

@@ -51,10 +51,19 @@ public abstract class BaseMusicCommand implements SlashCommand {
 
     protected boolean connectToUserVoice(CurrentStatus context) {
         var userChannel = context.userChannel();
+        if (userChannel == null) {
+            return false;
+        }
 
         try {
             var audioManager = context.audioManager();
-            audioManager.setSelfDeafened(false);
+            var connectedChannel = audioManager.getConnectedChannel();
+            if (connectedChannel != null && connectedChannel.equals(userChannel)) {
+                MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+                return true;
+            }
+
+            audioManager.setSelfDeafened(true);
             audioManager.openAudioConnection(userChannel);
             MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
             return true;
@@ -63,6 +72,7 @@ public abstract class BaseMusicCommand implements SlashCommand {
             return false;
         }
     }
+
 
     protected void disconnectFromVoice(CurrentStatus context) {
         var audioManager = context.audioManager();
