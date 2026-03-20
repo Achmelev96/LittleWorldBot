@@ -34,7 +34,7 @@ public final class PlayHandler extends BaseMusicCommand {
         var core = MusicCore.getInstance();
         var guild = status.guild();
         var guildHandler = core.getGuildHandler(guild);
-        var audioManager = status.voice().audioManager();
+        var audioManager = status.audioManager();
         if (audioManager.getSendingHandler() == null) {
             audioManager.setSendingHandler(guildHandler.getAudioSendHandler());
         }

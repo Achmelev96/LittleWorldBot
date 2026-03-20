@@ -15,10 +15,13 @@ final class YouTubeNormalizer {
     static String normalize(URI uri) {
         String host = UrlUtils.getHostLower(uri);
         String path = UrlUtils.getPathOrEmpty(uri);
-        String playlistId = UrlUtils.getPlaylistId(uri);
 
-        if (playlistId != null) {
-            return uri.toString();
+        if (UrlUtils.isPlaylistUrl(uri)) {
+            String playlistId = UrlUtils.getPlaylistId(uri);
+            if (playlistId == null || playlistId.isBlank()) {
+                return uri.toString();
+            }
+            return "https://youtube.com/playlist?list=" + playlistId;
         }
 
         if (host.contains("youtu.be")) {
@@ -38,7 +41,6 @@ final class YouTubeNormalizer {
             }
             return "https://youtube.com/watch?v=" + videoId;
         }
-
         return uri.toString();
     }
 }

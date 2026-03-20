@@ -1,75 +1,81 @@
 package interaction;
 
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.events.interaction.GenericInteractionCreateEvent;
-import net.dv8tion.jda.api.managers.AudioManager;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.managers.AudioManager;
 
-import java.util.Locale;
+public class CurrentStatus {
 
-public final class CurrentStatus {
     private final JDA jda;
     private final Guild guild;
-    private final Member member;
-    private final User user;
-    private final Locale locale;
-    private final VoiceStatus voice;
+    private final AudioManager audioManager;
+    private final AudioChannelUnion userChannel;
+    private final AudioChannelUnion botChannel;
 
-    private CurrentStatus(JDA jda, Guild guild, Member member, User user, Locale locale, VoiceStatus voice) {
+    private CurrentStatus(
+            JDA jda,
+            Guild guild,
+            AudioManager audioManager,
+            AudioChannelUnion userChannel,
+            AudioChannelUnion botChannel
+    ) {
         this.jda = jda;
         this.guild = guild;
-        this.member = member;
-        this.user = user;
-        this.locale = locale;
-        this.voice = voice;
+        this.audioManager = audioManager;
+        this.userChannel = userChannel;
+        this.botChannel = botChannel;
     }
 
-    public JDA jda() { return jda; }
-    public Guild guild() { return guild; }
-    public Member member() { return member; }
-    public User user() { return user; }
-    public Locale locale() { return locale; }
-    public VoiceStatus voice() { return voice; }
-
     public static CurrentStatus from(SlashCommandInteractionEvent event) {
-        return fromGeneric(event);
+        return build(event.getJDA(), event.getGuild(), event.getMember());
     }
 
     public static CurrentStatus from(CommandAutoCompleteInteractionEvent event) {
-        return fromGeneric(event);
+        return build(event.getJDA(), event.getGuild(), event.getMember());
     }
 
-    private static CurrentStatus fromGeneric(GenericInteractionCreateEvent event) {
-        var jda = event.getJDA();
-        var guild = event.getGuild();
-        var member = event.getMember();
-        var user = event.getUser();
-        var locale = event.getUserLocale() != null
-                ? Locale.forLanguageTag(event.getUserLocale().getLocale())
-                : Locale.ROOT;
+    private static CurrentStatus build(JDA jda, Guild guild, Member member) {
+        var voice = buildVoiceContext(guild, member);
 
-        var voice = buildVoiceStatus(guild, member);
-        return new CurrentStatus(jda, guild, member, user, locale, voice);
+        return new CurrentStatus(
+                jda,
+                guild,
+                voice.audioManager,
+                voice.userChannel,
+                voice.botChannel
+        );
     }
 
-    private static VoiceStatus buildVoiceStatus(Guild guild, Member member) {
+    private static VoiceCtx buildVoiceContext(Guild guild, Member member) {
+
         if (guild == null) {
-            return new VoiceStatus(null, null, null, null);
+            return new VoiceCtx(null, null, null);
         }
-        AudioManager audioManager = guild.getAudioManager();
+
+        AudioManager manager = guild.getAudioManager();
 
         AudioChannelUnion userChannel = null;
         if (member != null && member.getVoiceState() != null) {
             userChannel = member.getVoiceState().getChannel();
         }
 
-        AudioChannelUnion botChannel = audioManager.getConnectedChannel();
+        AudioChannelUnion botChannel = manager.getConnectedChannel();
 
-        return new VoiceStatus(guild, audioManager, userChannel, botChannel);
+        return new VoiceCtx(manager, userChannel, botChannel);
     }
+
+    private record VoiceCtx(
+            AudioManager audioManager,
+            AudioChannelUnion userChannel,
+            AudioChannelUnion botChannel
+    ) {}
+
+    public JDA jda() { return jda; }
+    public Guild guild() { return guild; }
+    public AudioManager audioManager() { return audioManager; }
+    public AudioChannelUnion userChannel() { return userChannel; }
+    public AudioChannelUnion botChannel() { return botChannel; }
 }

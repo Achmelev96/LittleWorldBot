@@ -9,7 +9,7 @@ public abstract class BaseMusicCommand implements SlashCommand {
     protected MusicCore core = MusicCore.getInstance();
 
     protected boolean isUserInVoice(CurrentStatus status) {
-        var userChannel = status.voice().userChannel();
+        var userChannel = status.userChannel();
         if (userChannel == null) {
             return false;
         }
@@ -17,7 +17,7 @@ public abstract class BaseMusicCommand implements SlashCommand {
     }
 
     protected boolean isBotInVoice(CurrentStatus status) {
-        var botChannel = status.voice().botChannel();
+        var botChannel = status.botChannel();
         if (botChannel == null) {
             return false;
         }
@@ -25,8 +25,8 @@ public abstract class BaseMusicCommand implements SlashCommand {
     }
 
     protected boolean isBotUserInSameChannel(CurrentStatus status) {
-        var botChannel = status.voice().botChannel();
-        var userChannel = status.voice().userChannel();
+        var botChannel = status.botChannel();
+        var userChannel = status.userChannel();
         if (botChannel == null || botChannel.getIdLong() != userChannel.getIdLong()) {
             return false;
         }
@@ -36,7 +36,7 @@ public abstract class BaseMusicCommand implements SlashCommand {
     protected boolean canBotJoin(CurrentStatus status) {
         var guild = status.guild();
         var self = guild != null ? guild.getSelfMember() : null;
-        var userChannel = status.voice().userChannel();
+        var userChannel = status.userChannel();
 
         if (guild == null || self == null || userChannel == null) {
             return false;
@@ -50,10 +50,10 @@ public abstract class BaseMusicCommand implements SlashCommand {
     }
 
     protected boolean connectToUserVoice(CurrentStatus context) {
-        var userChannel = context.voice().userChannel();
+        var userChannel = context.userChannel();
 
         try {
-            var audioManager = context.voice().audioManager();
+            var audioManager = context.audioManager();
             audioManager.setSelfDeafened(false);
             audioManager.openAudioConnection(userChannel);
             MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
@@ -65,7 +65,7 @@ public abstract class BaseMusicCommand implements SlashCommand {
     }
 
     protected void disconnectFromVoice(CurrentStatus context) {
-        var audioManager = context.voice().audioManager();
+        var audioManager = context.audioManager();
         audioManager.setSendingHandler(null);
         audioManager.closeAudioConnection();
         MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());

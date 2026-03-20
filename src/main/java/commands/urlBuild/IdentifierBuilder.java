@@ -17,8 +17,13 @@ public final class IdentifierBuilder {
         }
 
         if (YouTubeNormalizer.isYoutube(uri)) {
-            if (UrlUtils.getPlaylistId(uri) != null) {
-                return trimmed;
+            String playlistId = UrlUtils.getPlaylistId(uri);
+
+            if (UrlUtils.isPlaylistUrl(uri)) {
+                if (playlistId != null && !UrlUtils.isRadioPlaylistId(playlistId)) {
+                    return YouTubeNormalizer.normalize(uri);
+                }
+                return YouTubeNormalizer.normalize(uri);
             }
             return YouTubeNormalizer.normalize(uri);
         }

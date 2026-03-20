@@ -22,16 +22,18 @@ public final class UrlUtils {
         return host == null ? "" : host.toLowerCase();
     }
 
-    public static String getPlaylistId(URI uri) {
-        return getQueryParam(uri, "list");
+    static String getPathOrEmpty(URI uri) {
+        String path = uri.getPath();
+        return path == null ? "" : path;
     }
 
-    static boolean isPlaylistUrl(URI uri) {
-        String playlistId = getPlaylistId(uri);
-        if (playlistId != null) return true;
+    static String getFirstSegment(String path) {
+        if (path == null) return null;
 
-        String path = getPathOrEmpty(uri);
-        return path.startsWith("/playlist");
+        String normalized = path.startsWith("/") ? path.substring(1) : path;
+        int slashIndex = normalized.indexOf('/');
+        String firstSegment = (slashIndex >= 0) ? normalized.substring(0, slashIndex) : normalized;
+        return firstSegment.isEmpty() ? null : firstSegment;
     }
 
     static String getQueryParam(URI uri, String key) {
@@ -40,18 +42,18 @@ public final class UrlUtils {
         return params.get(key);
     }
 
-    static String getPathOrEmpty(URI uri) {
-        String path = uri.getPath();
-        return path == null ? "" : path;
+    public static String getPlaylistId(URI uri) {
+        return getQueryParam(uri, "list");
     }
 
-    static String getFirstSegment(String path) {
-        if  (path == null) return null;
+    static boolean isPlaylistUrl(URI uri) {
+        if (uri == null) return false;
+        String path = getPathOrEmpty(uri);
+        return "/playlist".equals(path);
+    }
 
-        String normalized = path.startsWith("/") ? path.substring(1) : path;
-        int slashIndex = normalized.indexOf('/');
-        String firstSegment = (slashIndex >= 0) ? normalized.substring(0, slashIndex) : normalized;
-        return firstSegment.isEmpty() ? null : firstSegment;
+    static boolean isRadioPlaylistId(String playlistId) {
+        return playlistId != null && playlistId.startsWith("RD");
     }
 
     static Map<String, String> parseQuery(String rawQuery) {
@@ -60,8 +62,14 @@ public final class UrlUtils {
 
         for (String pair : rawQuery.split("&")) {
             int equalsIndex = pair.indexOf('=');
-            String key = URLDecoder.decode(equalsIndex >= 0 ? pair.substring(0, equalsIndex) : pair, StandardCharsets.UTF_8);
-            String value = URLDecoder.decode(equalsIndex >= 0 ? pair.substring(equalsIndex + 1) : "", StandardCharsets.UTF_8);
+            String key = URLDecoder.decode(
+                    equalsIndex >= 0 ? pair.substring(0, equalsIndex) : pair,
+                    StandardCharsets.UTF_8
+            );
+            String value = URLDecoder.decode(
+                    equalsIndex >= 0 ? pair.substring(equalsIndex + 1) : "",
+                    StandardCharsets.UTF_8
+            );
             parameters.put(key, value);
         }
 
@@ -70,6 +78,7 @@ public final class UrlUtils {
         parameters.remove("si");
         parameters.remove("t");
         parameters.remove("start_radio");
+
         return parameters;
     }
 }
