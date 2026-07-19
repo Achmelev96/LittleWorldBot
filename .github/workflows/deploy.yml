@@ -1,0 +1,85 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: littleworldbot-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Build and test
+        run: mvn --batch-mode --no-transfer-progress clean verify
+
+      - name: Verify deployable JAR
+        run: test -f target/LittleWorldBot-1.0-SNAPSHOT-all.jar
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:github-actions
+          ping: 100.97.162.57
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 100.97.162.57 >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Upload JAR
+        run: |
+          scp target/LittleWorldBot-1.0-SNAPSHOT-all.jar \
+            alex96@100.97.162.57:/home/alex96/discordbot/littleworldbot.jar.new
+
+      - name: Rebuild and restart container
+        run: |
+          ssh alex96@100.97.162.57 'bash -s' <<'DEPLOY'
+          set -euo pipefail
+          cd /home/alex96/discordbot
+
+          cp littleworldbot.jar littleworldbot.jar.previous
+          mv littleworldbot.jar.new littleworldbot.jar
+
+          rollback() {
+            echo "Deployment failed; restoring the previous JAR."
+            mv littleworldbot.jar.previous littleworldbot.jar
+            docker compose up -d --build
+          }
+          trap rollback ERR
+
+          docker compose up -d --build
+          sleep 10
+          test "$(docker inspect --format '{{.State.Running}}' littleworldbot)" = "true"
+
+          trap - ERR
+          docker image prune -f
+          docker ps --filter name=littleworldbot \
+            --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
+          DEPLOY
