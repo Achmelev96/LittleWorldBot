@@ -57,6 +57,7 @@ public class TrackHandler extends AudioEventAdapter {
                 audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player, java.time.Duration.ofHours(1));
             }
         }
+        audio.MusicCore.getInstance().findGuildByPlayer(player).ifPresent(guild -> commands.MusicPanelHandler.getInstance().showOrUpdate(guild));
     }
 
     public boolean isQueueEmpty() {
@@ -66,6 +67,7 @@ public class TrackHandler extends AudioEventAdapter {
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
         audio.MusicCore.getInstance().cancelAfkDisconnectByPlayer(player);
+        audio.MusicCore.getInstance().findGuildByPlayer(player).ifPresent(guild -> commands.MusicPanelHandler.getInstance().showOrUpdate(guild));
     }
 
 

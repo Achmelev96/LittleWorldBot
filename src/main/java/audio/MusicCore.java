@@ -74,6 +74,10 @@ public class MusicCore {
         findGuildIdByPlayer(p).ifPresent(id -> scheduleAfkDisconnect(id, timeout));
     }
 
+    public Optional<Guild> findGuildByPlayer(AudioPlayer p) {
+        return findGuildIdByPlayer(p).map(id -> guildHandlers.get(id).getGuild());
+    }
+
     private Optional<Long> findGuildIdByPlayer(AudioPlayer p) {
         for (Map.Entry<Long, GuildHandler> entry : guildHandlers.entrySet()) {
             GuildHandler guildHandler = entry.getValue();

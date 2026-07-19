@@ -46,6 +46,8 @@ public final class PlayHandler extends BaseMusicCommand {
             }
         }
 
+        MusicPanelHandler.getInstance().rememberChannel(guild, event.getChannel());
+
         var rawQuery = event.getOption("query").getAsString();
         var identifier = IdentifierBuilder.build(rawQuery);
         if (identifier == null || identifier.isBlank()) {
@@ -58,6 +60,7 @@ public final class PlayHandler extends BaseMusicCommand {
             public void trackLoaded(AudioTrack track) {
                 guildHandler.getScheduler().queue(track);
                 audio.MusicCore.getInstance().cancelAfkDisconnect(status.guild().getIdLong());
+                MusicPanelHandler.getInstance().showOrUpdate(guild);
 
                 String title = track.getInfo().title;
                 String duration = TrackUtils.formatDuration(track.getInfo().length);
@@ -70,6 +73,7 @@ public final class PlayHandler extends BaseMusicCommand {
                     AudioTrack first = playlist.getTracks().get(0);
                     guildHandler.getScheduler().queue(first);
                     audio.MusicCore.getInstance().cancelAfkDisconnect(status.guild().getIdLong());
+                    MusicPanelHandler.getInstance().showOrUpdate(guild);
                     event.getHook().editOriginal("Нашел: " + first.getInfo().title).queue();
                     return;
                 }
@@ -81,6 +85,7 @@ public final class PlayHandler extends BaseMusicCommand {
                 }
 
                 audio.MusicCore.getInstance().cancelAfkDisconnect(status.guild().getIdLong());
+                MusicPanelHandler.getInstance().showOrUpdate(guild);
                 event.getHook().editOriginal(
                         "Добавил плейлист: " + playlist.getName() + " (" + trackCounter + " треков)"
                 ).queue();

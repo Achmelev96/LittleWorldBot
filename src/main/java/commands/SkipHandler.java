@@ -1,6 +1,7 @@
 package commands;
 
 import audio.TrackUtils;
+import audio.PlayerControlService;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import interaction.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -23,26 +24,22 @@ public final class SkipHandler extends BaseMusicCommand {
         var guild     = status.guild();
         var core      = MusicCore.getInstance();
         var handler   = core.getGuildHandler(guild);
-        var player    = handler.getPlayer();
-        var scheduler = handler.getScheduler();
 
-        AudioTrack currentTrack = player.getPlayingTrack();
+        PlayerControlService.SkipResult result = PlayerControlService.skip(handler);
+        AudioTrack currentTrack = result.previous();
         if (currentTrack == null) {
             event.getHook().editOriginal("Сейчас ничего не играет").queue();
             return;
         }
 
         String prevTitle = TrackUtils.safeTitle(currentTrack);
-        player.stopTrack();
-        scheduler.nextTrack();
-
-        AudioTrack queuedTrack = player.getPlayingTrack();
+        AudioTrack queuedTrack = result.current();
         String duration = null;
         if (queuedTrack != null) {
             duration = TrackUtils.formatDuration(queuedTrack.getInfo().length);
         }
 
-        MusicCore.getInstance().scheduleAfkDisconnect(status.guild().getIdLong(), java.time.Duration.ofHours(1));
+        MusicPanelHandler.getInstance().showOrUpdate(status.guild());
 
         if (queuedTrack == null) {
             event.getHook().editOriginal("Пропущен: " + prevTitle + ". Очередь пуста").queue();
