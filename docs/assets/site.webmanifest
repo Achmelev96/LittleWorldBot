@@ -1,0 +1,9 @@
+{
+  "name": "LittleWorldBot",
+  "short_name": "LittleWorldBot",
+  "description": "A lightweight Discord music bot.",
+  "start_url": "../index.html",
+  "display": "standalone",
+  "background_color": "#09050f",
+  "theme_color": "#0c0716"
+}
