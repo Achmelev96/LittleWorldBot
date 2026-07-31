@@ -2,11 +2,7 @@ package audio;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
-import java.time.Duration;
-
 public final class PlayerControlService {
-
-    private static final Duration AFK_TIMEOUT = Duration.ofHours(1);
 
     private PlayerControlService() {
     }
@@ -24,7 +20,7 @@ public final class PlayerControlService {
         AudioTrack next = scheduler.nextTrack();
 
         if (next == null) {
-            MusicCore.getInstance().scheduleAfkDisconnect(handler.getGuild().getIdLong(), AFK_TIMEOUT);
+            MusicCore.getInstance().scheduleAfkDisconnect(handler.getGuild().getIdLong());
         } else {
             MusicCore.getInstance().cancelAfkDisconnect(handler.getGuild().getIdLong());
         }
@@ -36,6 +32,11 @@ public final class PlayerControlService {
         var player = handler.getPlayer();
         boolean paused = !player.isPaused();
         player.setPaused(paused);
+        if (paused) {
+            MusicCore.getInstance().scheduleAfkDisconnect(handler.getGuild().getIdLong());
+        } else {
+            MusicCore.getInstance().cancelAfkDisconnect(handler.getGuild().getIdLong());
+        }
         return paused;
     }
 

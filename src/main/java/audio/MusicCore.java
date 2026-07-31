@@ -17,6 +17,7 @@ import java.util.concurrent.*;
 public class MusicCore {
 
     private static final MusicCore INSTANCE = new MusicCore();
+    private static final Duration AFK_TIMEOUT = Duration.ofMinutes(25);
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildHandler> guildHandlers = new ConcurrentHashMap<>();
     private final Map<Long, ScheduledFuture<?>> afkTasks = new ConcurrentHashMap<>();
@@ -58,11 +59,11 @@ public class MusicCore {
         }
     }
 
-    public void scheduleAfkDisconnect(long guildId, Duration timeout) {
+    public void scheduleAfkDisconnect(long guildId) {
         cancelAfkDisconnect(guildId);
         ScheduledFuture<?> future = afkScheduler.schedule(() -> {
             tryAfkLeave(guildId);
-        }, timeout.toMillis(), TimeUnit.MILLISECONDS);
+        }, AFK_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
         afkTasks.put(guildId, future);
     }
 
@@ -70,8 +71,8 @@ public class MusicCore {
         findGuildIdByPlayer(p).ifPresent(this::cancelAfkDisconnect);
     }
 
-    public void scheduleAfkDisconnectByPlayer(AudioPlayer p, Duration timeout) {
-        findGuildIdByPlayer(p).ifPresent(id -> scheduleAfkDisconnect(id, timeout));
+    public void scheduleAfkDisconnectByPlayer(AudioPlayer p) {
+        findGuildIdByPlayer(p).ifPresent(this::scheduleAfkDisconnect);
     }
 
     public Optional<Guild> findGuildByPlayer(AudioPlayer p) {
@@ -91,6 +92,7 @@ public class MusicCore {
     public boolean isIdle(long guildId) {
         GuildHandler guildHandler = guildHandlers.get(guildId);
         if (guildHandler == null) return true;
+        if (guildHandler.getPlayer().isPaused()) return true;
         boolean noPlaying = guildHandler.getPlayer().getPlayingTrack() == null;
         boolean queueEmpty = guildHandler.getScheduler().isQueueEmpty();
         return noPlaying && queueEmpty;

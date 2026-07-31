@@ -50,11 +50,11 @@ public class TrackHandler extends AudioEventAdapter {
         if (endReason.mayStartNext) {
             var started = nextTrack();
             if (started == null) {
-                audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player, java.time.Duration.ofHours(1));
+                audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);
             }
         } else {
             if (player.getPlayingTrack() == null && queue.isEmpty()) {
-                audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player, java.time.Duration.ofHours(1));
+                audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);
             }
         }
         audio.MusicCore.getInstance().findGuildByPlayer(player).ifPresent(guild -> commands.MusicPanelHandler.getInstance().showOrUpdate(guild));
