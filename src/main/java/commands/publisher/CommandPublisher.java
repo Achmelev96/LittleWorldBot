@@ -18,10 +18,11 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import voice.VoiceConnectionService;
 import voice.VoiceStateValidator;
+import musicpanel.MusicPanelService;
 
 public class CommandPublisher {
 
-    public static CommandRegistry buildRegistry(MessageCatalog messages) {
+    public static CommandRegistry buildRegistry(MessageCatalog messages, MusicPanelService panelService) {
         var musicCore = MusicCore.getInstance();
         var voiceValidator = new VoiceStateValidator();
         var voiceConnection = new VoiceConnectionService(musicCore);
@@ -31,9 +32,9 @@ public class CommandPublisher {
         var leaveUseCase = new LeaveUseCase(musicCore, voiceValidator, voiceConnection);
 
         var registry = new CommandRegistry();
-        registry.registerSlash("play", new PlayCommandHandler(playUseCase, messages));
+        registry.registerSlash("play", new PlayCommandHandler(playUseCase, messages, panelService));
         registry.registerSlash("leave", new LeaveCommandHandler(leaveUseCase, messages));
-        registry.registerSlash("skip", new SkipCommandHandler(skipUseCase, messages));
+        registry.registerSlash("skip", new SkipCommandHandler(skipUseCase, messages, panelService));
         registry.register("play", "query", new PlayQueryAutocomplete(messages));
         return registry;
     }

@@ -3,15 +3,22 @@ package commands.play;
 import commands.SlashCommand;
 import interaction.CurrentStatus;
 import localization.MessageCatalog;
+import musicpanel.MusicPanelService;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 public final class PlayCommandHandler implements SlashCommand {
     private final PlayUseCase playUseCase;
     private final MessageCatalog messages;
+    private final MusicPanelService panelService;
 
-    public PlayCommandHandler(PlayUseCase playUseCase, MessageCatalog messages) {
+    public PlayCommandHandler(
+            PlayUseCase playUseCase,
+            MessageCatalog messages,
+            MusicPanelService panelService
+    ) {
         this.playUseCase = playUseCase;
         this.messages = messages;
+        this.panelService = panelService;
     }
 
     @Override
@@ -32,6 +39,9 @@ public final class PlayCommandHandler implements SlashCommand {
                 return;
             }
             event.getHook().editOriginal(messageFor(context, result)).queue();
+            if (!(result instanceof PlayResult.Failure)) {
+                panelService.showOrMove(context.guild(), event.getChannel());
+            }
         });
     }
 

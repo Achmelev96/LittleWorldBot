@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 public class MusicCore {
 
@@ -21,6 +22,7 @@ public class MusicCore {
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildHandler> guildHandlers = new ConcurrentHashMap<>();
     private final Map<Long, ScheduledFuture<?>> afkTasks = new ConcurrentHashMap<>();
+    private final CopyOnWriteArrayList<Consumer<Guild>> playbackStateListeners = new CopyOnWriteArrayList<>();
     private final ScheduledExecutorService afkScheduler = Executors.newSingleThreadScheduledExecutor(run -> {
         Thread thread = new Thread(run, "afk-scheduler");
         thread.setDaemon(true);
@@ -79,6 +81,24 @@ public class MusicCore {
         return findGuildIdByPlayer(p).map(id -> guildHandlers.get(id).getGuild());
     }
 
+    public void addPlaybackStateListener(Consumer<Guild> listener) {
+        playbackStateListeners.add(Objects.requireNonNull(listener));
+    }
+
+    public void notifyPlaybackStateChangedByPlayer(AudioPlayer player) {
+        findGuildByPlayer(player).ifPresent(this::notifyPlaybackStateChanged);
+    }
+
+    public void notifyPlaybackStateChanged(Guild guild) {
+        for (Consumer<Guild> listener : playbackStateListeners) {
+            try {
+                listener.accept(guild);
+            } catch (RuntimeException error) {
+                error.printStackTrace();
+            }
+        }
+    }
+
     private Optional<Long> findGuildIdByPlayer(AudioPlayer p) {
         for (Map.Entry<Long, GuildHandler> entry : guildHandlers.entrySet()) {
             GuildHandler guildHandler = entry.getValue();
@@ -110,6 +130,7 @@ public class MusicCore {
             guildHandler.getScheduler().stopAll();
             guildHandler.getGuild().getAudioManager().setSendingHandler(null);
             guildHandler.getGuild().getAudioManager().closeAudioConnection();
+            notifyPlaybackStateChanged(guildHandler.getGuild());
         } catch (Exception ignored) {
         }
     }
