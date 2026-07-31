@@ -1,14 +1,5 @@
 package commands.publisher;
 
-import commands.CommandRegistry;
-import commands.autocomplete.PlayQueryAutocomplete;
-import commands.leave.LeaveCommandHandler;
-import commands.leave.LeaveUseCase;
-import commands.play.PlayCommandHandler;
-import commands.play.PlayUseCase;
-import commands.skip.SkipCommandHandler;
-import commands.skip.SkipUseCase;
-import audio.MusicCore;
 import localization.MessageCatalog;
 import localization.BotLanguage;
 import net.dv8tion.jda.api.JDA;
@@ -16,29 +7,15 @@ import net.dv8tion.jda.api.interactions.DiscordLocale;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-import voice.VoiceConnectionService;
-import voice.VoiceStateValidator;
-import musicpanel.MusicPanelService;
 
-public class CommandPublisher {
+public final class CommandPublisher {
+    private final MessageCatalog messages;
 
-    public static CommandRegistry buildRegistry(MessageCatalog messages, MusicPanelService panelService) {
-        var musicCore = MusicCore.getInstance();
-        var voiceValidator = new VoiceStateValidator();
-        var voiceConnection = new VoiceConnectionService(musicCore);
-
-        var playUseCase = new PlayUseCase(musicCore, voiceValidator, voiceConnection);
-        var skipUseCase = new SkipUseCase(musicCore, voiceValidator);
-        var leaveUseCase = new LeaveUseCase(musicCore, voiceValidator, voiceConnection);
-
-        var registry = new CommandRegistry();
-        registry.registerSlash("play", new PlayCommandHandler(playUseCase, messages, panelService));
-        registry.registerSlash("leave", new LeaveCommandHandler(leaveUseCase, messages));
-        registry.registerSlash("skip", new SkipCommandHandler(skipUseCase, messages, panelService));
-        registry.register("play", "query", new PlayQueryAutocomplete(messages));
-        return registry;
+    public CommandPublisher(MessageCatalog messages) {
+        this.messages = messages;
     }
-    public static void publish(JDA jda, MessageCatalog messages) {
+
+    public void publish(JDA jda) {
         var queryOption = new OptionData(
                 OptionType.STRING,
                 "query",
@@ -68,6 +45,12 @@ public class CommandPublisher {
                                 DiscordLocale.RUSSIAN,
                                 messages.get(BotLanguage.RUSSIAN, "command.leave.description")
                         )
-        ).queue();
+        ).queue(
+                commands -> System.out.println("[Commands] Published " + commands.size() + " global commands"),
+                error -> {
+                    System.err.println("[Commands] Could not publish global commands");
+                    error.printStackTrace();
+                }
+        );
     }
 }

@@ -21,7 +21,10 @@ public final class LeaveCommandHandler implements SlashCommand {
 
     @Override
     public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
-        event.deferReply(true).queue();
+        event.deferReply(true).queue(ignored -> execute(event, context));
+    }
+
+    private void execute(SlashCommandInteractionEvent event, CurrentStatus context) {
         LeaveResult result = leaveUseCase.execute(context);
         String message = switch (result) {
             case SUCCESS -> messages.get(context.language(), "leave.success");

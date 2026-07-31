@@ -28,7 +28,10 @@ public final class PlayCommandHandler implements SlashCommand {
 
     @Override
     public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
-        event.deferReply(false).queue();
+        event.deferReply(true).queue(ignored -> execute(event, context));
+    }
+
+    private void execute(SlashCommandInteractionEvent event, CurrentStatus context) {
         var queryOption = event.getOption("query");
         String query = queryOption == null ? "" : queryOption.getAsString();
 
@@ -38,10 +41,23 @@ public final class PlayCommandHandler implements SlashCommand {
                 event.getHook().editOriginal(messages.get(context.language(), "common.error")).queue();
                 return;
             }
-            event.getHook().editOriginal(messageFor(context, result)).queue();
-            if (!(result instanceof PlayResult.Failure)) {
-                panelService.showOrMove(context.guild(), event.getChannel());
+            String response = messageFor(context, result);
+            if (result instanceof PlayResult.Failure) {
+                event.getHook().editOriginal(response).queue();
+                return;
             }
+
+            panelService.showOrMove(context.guild(), event.getChannel());
+            event.getChannel().sendMessage(response)
+                    .queue(
+                            ignored -> event.getHook().deleteOriginal().queue(),
+                            sendError -> {
+                                sendError.printStackTrace();
+                                event.getHook().editOriginal(
+                                        messages.get(context.language(), "common.error")
+                                ).queue();
+                            }
+                    );
         });
     }
 

@@ -28,7 +28,10 @@ public final class SkipCommandHandler implements SlashCommand {
 
     @Override
     public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
-        event.deferReply(false).queue();
+        event.deferReply(true).queue(ignored -> execute(event, context));
+    }
+
+    private void execute(SlashCommandInteractionEvent event, CurrentStatus context) {
         SkipResult result = skipUseCase.execute(context);
         event.getHook().editOriginal(messageFor(context, result)).queue();
         if (!(result instanceof SkipResult.Failure)) {
