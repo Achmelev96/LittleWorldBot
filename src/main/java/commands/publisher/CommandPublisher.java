@@ -1,10 +1,14 @@
 package commands.publisher;
 
 import commands.CommandRegistry;
-import commands.LeaveHandler;
-import commands.PlayHandler;
-import commands.SkipHandler;
 import commands.autocomplete.PlayQueryAutocomplete;
+import commands.leave.LeaveCommandHandler;
+import commands.leave.LeaveUseCase;
+import commands.play.PlayCommandHandler;
+import commands.play.PlayUseCase;
+import commands.skip.SkipCommandHandler;
+import commands.skip.SkipUseCase;
+import audio.MusicCore;
 import localization.MessageCatalog;
 import localization.BotLanguage;
 import net.dv8tion.jda.api.JDA;
@@ -12,14 +16,24 @@ import net.dv8tion.jda.api.interactions.DiscordLocale;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import voice.VoiceConnectionService;
+import voice.VoiceStateValidator;
 
 public class CommandPublisher {
 
     public static CommandRegistry buildRegistry(MessageCatalog messages) {
+        var musicCore = MusicCore.getInstance();
+        var voiceValidator = new VoiceStateValidator();
+        var voiceConnection = new VoiceConnectionService(musicCore);
+
+        var playUseCase = new PlayUseCase(musicCore, voiceValidator, voiceConnection);
+        var skipUseCase = new SkipUseCase(musicCore, voiceValidator);
+        var leaveUseCase = new LeaveUseCase(musicCore, voiceValidator, voiceConnection);
+
         var registry = new CommandRegistry();
-        registry.registerSlash("play", new PlayHandler(messages));
-        registry.registerSlash("leave", new LeaveHandler(messages));
-        registry.registerSlash("skip", new SkipHandler(messages));
+        registry.registerSlash("play", new PlayCommandHandler(playUseCase, messages));
+        registry.registerSlash("leave", new LeaveCommandHandler(leaveUseCase, messages));
+        registry.registerSlash("skip", new SkipCommandHandler(skipUseCase, messages));
         registry.register("play", "query", new PlayQueryAutocomplete(messages));
         return registry;
     }
