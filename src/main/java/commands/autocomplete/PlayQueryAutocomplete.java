@@ -12,6 +12,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
 import audio.MusicCore;
+import localization.MessageCatalog;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -22,6 +23,11 @@ public class PlayQueryAutocomplete implements AutocompleteProvider {
 
     private static final int MAX_CHOICES = 25;
     private static final int MAX_LABEL   = 100;
+    private final MessageCatalog messages;
+
+    public PlayQueryAutocomplete(MessageCatalog messages) {
+        this.messages = messages;
+    }
 
     @Override
     public boolean supports(String commandName, String optionName) {
@@ -53,7 +59,7 @@ public class PlayQueryAutocomplete implements AutocompleteProvider {
             @Override
             public void trackLoaded(AudioTrack track) {
                 var info = track.getInfo();
-                String label = makeLabel(info.title, info.author);
+                String label = makeLabel(info.title, info.author, context);
                 String value = info.uri != null ? info.uri : ("ytsearch:" + input);
 
                 event.replyChoices(new Command.Choice(limit(label, MAX_LABEL), value)).queue();
@@ -72,7 +78,7 @@ public class PlayQueryAutocomplete implements AutocompleteProvider {
                     AudioTrack t = tracks.get(i);
                     var info = t.getInfo();
 
-                    String label = makeLabel(info.title, info.author);
+                    String label = makeLabel(info.title, info.author, context);
                     String value = info.uri != null ? info.uri : ("ytsearch:" + safeConcat(info.title, info.author));
 
                     choices.add(new Command.Choice(limit(label, MAX_LABEL), value));
@@ -93,8 +99,10 @@ public class PlayQueryAutocomplete implements AutocompleteProvider {
         });
     }
 
-    private static String makeLabel(String title, String author) {
-        String t = title != null && !title.isBlank() ? title : "Unknown";
+    private String makeLabel(String title, String author, CurrentStatus context) {
+        String t = title != null && !title.isBlank()
+                ? title
+                : messages.get(context.language(), "autocomplete.unknown");
         String a = author != null && !author.isBlank() ? author : "";
         return a.isEmpty() ? t : (t + " — " + a);
     }

@@ -10,15 +10,22 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import localization.MessageCatalog;
 
 public class BotListener extends ListenerAdapter {
 
     private final SlashCommandRouter slashCommandRouter;
     private final AutocompleteRouter autocompleteRouter;
+    private final MessageCatalog messages;
 
-    public BotListener(SlashCommandRouter slashCommandRouter, AutocompleteRouter autocompleteRouter) {
+    public BotListener(
+            SlashCommandRouter slashCommandRouter,
+            AutocompleteRouter autocompleteRouter,
+            MessageCatalog messages
+    ) {
         this.slashCommandRouter = slashCommandRouter;
         this.autocompleteRouter = autocompleteRouter;
+        this.messages = messages;
     }
 
     /*public void onMessageReceived(MessageReceivedEvent event) {
@@ -28,7 +35,7 @@ public class BotListener extends ListenerAdapter {
     }*/
 
     public void onReady(ReadyEvent event) {
-        CommandPublisher.publish(event.getJDA());
+        CommandPublisher.publish(event.getJDA(), messages);
     }
 
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {

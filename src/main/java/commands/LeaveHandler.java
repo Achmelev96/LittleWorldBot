@@ -1,10 +1,13 @@
 package commands;
 
-import audio.MusicCore;
 import interaction.CurrentStatus;
+import localization.MessageCatalog;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 public final class LeaveHandler extends BaseMusicCommand {
+    public LeaveHandler(MessageCatalog messages) {
+        super(messages);
+    }
 
     @Override
     public String name() {
@@ -16,19 +19,17 @@ public final class LeaveHandler extends BaseMusicCommand {
         event.deferReply(true).queue();
 
         if (!isBotInVoice(status)) {
-            event.getHook().editOriginal("Меня там и нет").queue();
+            event.getHook().editOriginal(messages.get(status.language(), "leave.not_connected")).queue();
             return;
         }
 
         try {
-            var guildHandler = core.getGuildHandler(status.guild());
-            guildHandler.getScheduler().stopAll();
+            core.getGuildHandler(status.guild()).getScheduler().stopAll();
             disconnectFromVoice(status);
-
-            event.getHook().editOriginal("Ладно, ухожу").queue();
-        } catch (Exception e) {
-            event.getHook().editOriginal("Что-то пошло не так").queue();
-            e.printStackTrace();
+            event.getHook().editOriginal(messages.get(status.language(), "leave.success")).queue();
+        } catch (Exception error) {
+            event.getHook().editOriginal(messages.get(status.language(), "common.error")).queue();
+            error.printStackTrace();
         }
     }
 }

@@ -2,24 +2,38 @@ package commands.routers;
 
 import commands.CommandRegistry;
 import interaction.CurrentStatus;
+import localization.BotLanguage;
+import localization.MessageCatalog;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import settings.GuildLanguageService;
 
 public class SlashCommandRouter {
     private final CommandRegistry registry;
+    private final GuildLanguageService languageService;
+    private final MessageCatalog messages;
 
-    public SlashCommandRouter(CommandRegistry registry) {
+    public SlashCommandRouter(
+            CommandRegistry registry,
+            GuildLanguageService languageService,
+            MessageCatalog messages
+    ) {
         this.registry = registry;
+        this.languageService = languageService;
+        this.messages = messages;
     }
 
     public void route(SlashCommandInteractionEvent event) {
         var name = event.getName();
-        var context = CurrentStatus.from(event);
+        BotLanguage language = event.getGuild() == null
+                ? BotLanguage.ENGLISH
+                : languageService.getLanguage(event.getGuild().getIdLong());
+        var context = CurrentStatus.from(event, language);
 
-        var opt = registry.getSlash(name);
-        if (opt.isPresent()) {
-            opt.get().handle(event, context);
-        } else {
-            event.reply("Неизвестная команда: " + name).setEphemeral(true).queue();
-        }
+        registry.getSlash(name).ifPresentOrElse(
+                command -> command.handle(event, context),
+                () -> event.reply(messages.get(language, "command.unknown", name))
+                        .setEphemeral(true)
+                        .queue()
+        );
     }
 }

@@ -40,3 +40,6 @@ build/
 
 # === Local configuration files ===
 config.properties
+
+# === Runtime data ===
+data/

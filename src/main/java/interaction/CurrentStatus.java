@@ -1,5 +1,6 @@
 package interaction;
 
+import localization.BotLanguage;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
@@ -14,30 +15,33 @@ public class CurrentStatus {
     private final AudioManager audioManager;
     private final AudioChannelUnion userChannel;
     private final AudioChannelUnion botChannel;
+    private final BotLanguage language;
 
     private CurrentStatus(
             JDA jda,
             Guild guild,
             AudioManager audioManager,
             AudioChannelUnion userChannel,
-            AudioChannelUnion botChannel
+            AudioChannelUnion botChannel,
+            BotLanguage language
     ) {
         this.jda = jda;
         this.guild = guild;
         this.audioManager = audioManager;
         this.userChannel = userChannel;
         this.botChannel = botChannel;
+        this.language = language;
     }
 
-    public static CurrentStatus from(SlashCommandInteractionEvent event) {
-        return build(event.getJDA(), event.getGuild(), event.getMember());
+    public static CurrentStatus from(SlashCommandInteractionEvent event, BotLanguage language) {
+        return build(event.getJDA(), event.getGuild(), event.getMember(), language);
     }
 
-    public static CurrentStatus from(CommandAutoCompleteInteractionEvent event) {
-        return build(event.getJDA(), event.getGuild(), event.getMember());
+    public static CurrentStatus from(CommandAutoCompleteInteractionEvent event, BotLanguage language) {
+        return build(event.getJDA(), event.getGuild(), event.getMember(), language);
     }
 
-    private static CurrentStatus build(JDA jda, Guild guild, Member member) {
+    private static CurrentStatus build(JDA jda, Guild guild, Member member, BotLanguage language) {
         var voice = buildVoiceContext(guild, member);
 
         return new CurrentStatus(
@@ -45,7 +49,8 @@ public class CurrentStatus {
                 guild,
                 voice.audioManager,
                 voice.userChannel,
-                voice.botChannel
+                voice.botChannel,
+                language == null ? BotLanguage.ENGLISH : language
         );
     }
 
@@ -78,4 +83,5 @@ public class CurrentStatus {
     public AudioManager audioManager() { return audioManager; }
     public AudioChannelUnion userChannel() { return userChannel; }
     public AudioChannelUnion botChannel() { return botChannel; }
+    public BotLanguage language() { return language; }
 }

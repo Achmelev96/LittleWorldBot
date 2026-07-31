@@ -6,13 +6,16 @@ import audio.PlayerControlService;
 import audio.TrackUtils;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
+import localization.BotLanguage;
+import localization.MessageCatalog;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
-import net.dv8tion.jda.api.components.actionrow.ActionRow;
-import net.dv8tion.jda.api.components.buttons.Button;
+import settings.GuildLanguageService;
 
 import java.awt.Color;
 import java.util.Map;
@@ -22,7 +25,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class MusicPanelHandler {
-
     private static final MusicPanelHandler INSTANCE = new MusicPanelHandler();
     private static final String PLAY_PAUSE_ID = "music:play_pause";
     private static final String SKIP_ID = "music:skip";
@@ -35,12 +37,20 @@ public final class MusicPanelHandler {
         return thread;
     });
 
+    private volatile MessageCatalog messages;
+    private volatile GuildLanguageService languageService;
+
     private MusicPanelHandler() {
         updater.scheduleAtFixedRate(this::refreshPanels, 1, 1, TimeUnit.SECONDS);
     }
 
     public static MusicPanelHandler getInstance() {
         return INSTANCE;
+    }
+
+    public void configure(MessageCatalog messages, GuildLanguageService languageService) {
+        this.messages = messages;
+        this.languageService = languageService;
     }
 
     public void rememberChannel(Guild guild, MessageChannel channel) {
@@ -68,10 +78,7 @@ public final class MusicPanelHandler {
             if (state.creating) return;
             state.creating = true;
             state.channel.sendMessageEmbeds(buildEmbed(handler).build())
-                    .setComponents(ActionRow.of(
-                            buildPlayPauseButton(handler),
-                            Button.secondary(SKIP_ID, "⏭ Skip")
-                    ))
+                    .setComponents(buildControls(handler))
                     .queue(message -> {
                         state.message = message;
                         state.creating = false;
@@ -89,7 +96,6 @@ public final class MusicPanelHandler {
         if (!PLAY_PAUSE_ID.equals(componentId) && !SKIP_ID.equals(componentId)) return;
 
         event.deferEdit().queue();
-
         Guild guild = event.getGuild();
         if (guild == null) return;
 
@@ -120,11 +126,15 @@ public final class MusicPanelHandler {
     private void editExisting(long guildId, PanelState state, GuildHandler handler) {
         if (state.message == null) return;
         state.message.editMessageEmbeds(buildEmbed(handler).build())
-                .setComponents(ActionRow.of(
-                        buildPlayPauseButton(handler),
-                        Button.secondary(SKIP_ID, "⏭ Skip")
-                ))
+                .setComponents(buildControls(handler))
                 .queue(null, error -> panels.remove(guildId));
+    }
+
+    private ActionRow buildControls(GuildHandler handler) {
+        return ActionRow.of(
+                buildPlayPauseButton(handler),
+                Button.secondary(SKIP_ID, "⏭ Skip")
+        );
     }
 
     private void deleteExisting(long guildId, PanelState state) {
@@ -147,11 +157,12 @@ public final class MusicPanelHandler {
         AudioTrackInfo info = track.getInfo();
         long position = track.getPosition();
         long length = info.length;
+        BotLanguage language = languageFor(handler.getGuild());
 
         EmbedBuilder embed = new EmbedBuilder()
                 .setColor(new Color(88, 101, 242))
-                .setTitle(safe(info.title))
-                .setDescription(buildDescription(info, position, length));
+                .setTitle(safe(info.title, language))
+                .setDescription(buildDescription(position, length));
 
         if (info.author != null && !info.author.isBlank()) {
             embed.setAuthor(info.author);
@@ -163,13 +174,18 @@ public final class MusicPanelHandler {
         return embed;
     }
 
-    private String buildDescription(AudioTrackInfo info, long position, long length) {
-        return "`" + TrackUtils.formatDuration(position) + "` " + progressBar(position, length) + " `" + TrackUtils.formatDuration(length) + "`";
+    private String buildDescription(long position, long length) {
+        return "`" + TrackUtils.formatDuration(position) + "` "
+                + progressBar(position, length)
+                + " `" + TrackUtils.formatDuration(length) + "`";
     }
 
     private String progressBar(long position, long length) {
         if (length <= 0) return "●" + "─".repeat(BAR_LENGTH - 1);
-        int marker = (int) Math.min(BAR_LENGTH - 1, Math.max(0, Math.round((position / (float) length) * (BAR_LENGTH - 1))));
+        int marker = (int) Math.min(
+                BAR_LENGTH - 1,
+                Math.max(0, Math.round((position / (float) length) * (BAR_LENGTH - 1)))
+        );
         StringBuilder bar = new StringBuilder();
         for (int i = 0; i < BAR_LENGTH; i++) {
             bar.append(i == marker ? '●' : (i < marker ? '━' : '─'));
@@ -191,8 +207,18 @@ public final class MusicPanelHandler {
         return "https://img.youtube.com/vi/" + id + "/hqdefault.jpg";
     }
 
-    private String safe(String value) {
-        return value == null || value.isBlank() ? "Неизвестный трек" : value;
+    private BotLanguage languageFor(Guild guild) {
+        GuildLanguageService service = languageService;
+        return service == null ? BotLanguage.ENGLISH : service.getLanguage(guild.getIdLong());
+    }
+
+    private String text(BotLanguage language, String key) {
+        MessageCatalog catalog = messages;
+        return catalog == null ? key : catalog.get(language, key);
+    }
+
+    private String safe(String value, BotLanguage language) {
+        return value == null || value.isBlank() ? text(language, "panel.unknown_track") : value;
     }
 
     private static final class PanelState {

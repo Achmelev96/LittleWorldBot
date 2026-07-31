@@ -2,82 +2,69 @@ package commands;
 
 import audio.MusicCore;
 import interaction.CurrentStatus;
+import localization.MessageCatalog;
 import net.dv8tion.jda.api.Permission;
 
 public abstract class BaseMusicCommand implements SlashCommand {
+    protected final MusicCore core = MusicCore.getInstance();
+    protected final MessageCatalog messages;
 
-    protected MusicCore core = MusicCore.getInstance();
+    protected BaseMusicCommand(MessageCatalog messages) {
+        this.messages = messages;
+    }
 
     protected boolean isUserInVoice(CurrentStatus status) {
-        var userChannel = status.userChannel();
-        if (userChannel == null) {
-            return false;
-        }
-        return true;
+        return status.userChannel() != null;
     }
 
     protected boolean isBotInVoice(CurrentStatus status) {
-        var botChannel = status.botChannel();
-        if (botChannel == null) {
-            return false;
-        }
-        return true;
+        return status.botChannel() != null;
     }
 
     protected boolean isBotUserInSameChannel(CurrentStatus status) {
         var botChannel = status.botChannel();
         var userChannel = status.userChannel();
-        if (botChannel == null || botChannel.getIdLong() != userChannel.getIdLong()) {
-            return false;
-        }
-        return true;
+        return botChannel != null
+                && userChannel != null
+                && botChannel.getIdLong() == userChannel.getIdLong();
     }
 
-    protected boolean canBotJoin(CurrentStatus status) {
+    protected boolean lacksVoicePermissions(CurrentStatus status) {
         var guild = status.guild();
-        var self = guild != null ? guild.getSelfMember() : null;
         var userChannel = status.userChannel();
+        if (guild == null || userChannel == null) return true;
 
-        if (guild == null || self == null || userChannel == null) {
-            return false;
-        }
-
-        var perms = guild.getSelfMember().getPermissions(userChannel);
-        if (!perms.contains(Permission.VOICE_CONNECT) || !perms.contains(Permission.VOICE_SPEAK)) {
-            return true;
-        }
-        return false;
+        var permissions = guild.getSelfMember().getPermissions(userChannel);
+        return !permissions.contains(Permission.VOICE_CONNECT)
+                || !permissions.contains(Permission.VOICE_SPEAK);
     }
 
     protected boolean connectToUserVoice(CurrentStatus context) {
         var userChannel = context.userChannel();
-        if (userChannel == null) {
-            return false;
-        }
+        if (userChannel == null) return false;
 
         try {
             var audioManager = context.audioManager();
             var connectedChannel = audioManager.getConnectedChannel();
-            if (connectedChannel != null && connectedChannel.equals(userChannel)) {
-                MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+            if (userChannel.equals(connectedChannel)) {
+                core.cancelAfkDisconnect(context.guild().getIdLong());
                 return true;
             }
 
             audioManager.setSelfDeafened(true);
             audioManager.openAudioConnection(userChannel);
-            MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+            core.cancelAfkDisconnect(context.guild().getIdLong());
             return true;
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception error) {
+            error.printStackTrace();
             return false;
         }
     }
-
 
     protected void disconnectFromVoice(CurrentStatus context) {
         var audioManager = context.audioManager();
         audioManager.setSendingHandler(null);
         audioManager.closeAudioConnection();
-        MusicCore.getInstance().cancelAfkDisconnect(context.guild().getIdLong());
+        core.cancelAfkDisconnect(context.guild().getIdLong());
     }
 }
