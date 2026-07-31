@@ -1,4 +1,4 @@
-package interaction;
+package voice;
 
 import localization.BotLanguage;
 import net.dv8tion.jda.api.JDA;

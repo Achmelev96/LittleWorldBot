@@ -1,7 +1,7 @@
 package commands.routers;
 
 import commands.CommandRegistry;
-import interaction.CurrentStatus;
+import voice.CurrentStatus;
 import localization.BotLanguage;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import settings.GuildLanguageService;

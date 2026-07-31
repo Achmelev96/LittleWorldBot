@@ -7,7 +7,7 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import commands.urlBuild.IdentifierBuilder;
-import interaction.CurrentStatus;
+import voice.CurrentStatus;
 import voice.VoiceConnectionService;
 import voice.VoiceStateValidator;
 import voice.VoiceValidationResult;

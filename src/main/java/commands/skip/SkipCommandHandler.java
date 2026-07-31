@@ -1,7 +1,7 @@
 package commands.skip;
 
 import commands.SlashCommand;
-import interaction.CurrentStatus;
+import voice.CurrentStatus;
 import localization.MessageCatalog;
 import musicpanel.MusicPanelService;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;

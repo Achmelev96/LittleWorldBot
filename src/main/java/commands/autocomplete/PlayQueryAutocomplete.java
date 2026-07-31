@@ -1,7 +1,7 @@
 package commands.autocomplete;
 
 import commands.urlBuild.UrlUtils;
-import interaction.CurrentStatus;
+import voice.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
 
