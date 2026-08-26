@@ -94,6 +94,5 @@ public class TrackHandler extends AudioEventAdapter {
         audio.MusicCore.getInstance().cancelAfkDisconnectByPlayer(player);
         audio.MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
     }
-
-
+    // little change
 }
