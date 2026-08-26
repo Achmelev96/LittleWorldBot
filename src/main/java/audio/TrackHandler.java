@@ -2,6 +2,7 @@ package audio;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 
@@ -18,6 +19,9 @@ public class TrackHandler extends AudioEventAdapter {
     }
 
     public synchronized void queue(AudioTrack track) {
+        if (player.getPlayingTrack() == null && player.isPaused()) {
+            player.setPaused(false);
+        }
         if (!player.startTrack(track, true)) {
             queue.offer(track);
         } else {
@@ -32,6 +36,7 @@ public class TrackHandler extends AudioEventAdapter {
     public synchronized void stopAll() {
         queue.clear();
         player.stopTrack();
+        player.setPaused(false);
     }
 
     // for skip
@@ -47,6 +52,9 @@ public class TrackHandler extends AudioEventAdapter {
 
     @Override
     public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
+        System.out.println("[TrackHandler][end] reason=" + endReason
+                + ", title=" + track.getInfo().title
+                + ", uri=" + track.getInfo().uri);
         if (endReason.mayStartNext) {
             var started = nextTrack();
             if (started == null) {
@@ -58,6 +66,23 @@ public class TrackHandler extends AudioEventAdapter {
             }
         }
         audio.MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
+    }
+
+    @Override
+    public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
+        System.err.println("[TrackHandler][exception] severity=" + exception.severity
+                + ", title=" + track.getInfo().title
+                + ", uri=" + track.getInfo().uri
+                + ", position=" + track.getPosition());
+        exception.printStackTrace();
+    }
+
+    @Override
+    public void onTrackStuck(AudioPlayer player, AudioTrack track, long thresholdMs) {
+        System.err.println("[TrackHandler][stuck] thresholdMs=" + thresholdMs
+                + ", title=" + track.getInfo().title
+                + ", uri=" + track.getInfo().uri
+                + ", position=" + track.getPosition());
     }
 
     public boolean isQueueEmpty() {

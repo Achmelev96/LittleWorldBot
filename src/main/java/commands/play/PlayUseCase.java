@@ -102,6 +102,7 @@ public final class PlayUseCase {
 
             @Override
             public void noMatches() {
+                scheduleAfkIfIdle(guild.getIdLong());
                 result.complete(new PlayResult.Failure(PlayResult.FailureReason.NO_MATCHES));
             }
 
@@ -109,6 +110,7 @@ public final class PlayUseCase {
             public void loadFailed(FriendlyException exception) {
                 System.err.println("[PlayUseCase][loadFailed] severity=" + exception.severity);
                 exception.printStackTrace();
+                scheduleAfkIfIdle(guild.getIdLong());
                 result.complete(new PlayResult.Failure(
                         PlayResult.FailureReason.LOAD_FAILED,
                         exception.getMessage()
@@ -120,5 +122,11 @@ public final class PlayUseCase {
 
     private CompletionStage<PlayResult> failure(PlayResult.FailureReason reason) {
         return CompletableFuture.completedFuture(new PlayResult.Failure(reason));
+    }
+
+    private void scheduleAfkIfIdle(long guildId) {
+        if (musicCore.isIdle(guildId)) {
+            musicCore.scheduleAfkDisconnect(guildId);
+        }
     }
 }
