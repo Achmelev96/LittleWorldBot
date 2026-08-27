@@ -6,7 +6,7 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 public final class MessageCatalog {
-    private static final String BUNDLE_NAME = "lang.messages";
+    private static final String BUNDLE_NAME = "i18n.messages";
 
     public String get(BotLanguage language, String key, Object... arguments) {
         BotLanguage resolvedLanguage = language == null ? BotLanguage.ENGLISH : language;

@@ -1,7 +1,7 @@
 package commands.leave;
 
 import audio.MusicCore;
-import voice.CurrentStatus;
+import interaction.CurrentStatus;
 import voice.VoiceConnectionService;
 import voice.VoiceStateValidator;
 import voice.VoiceValidationResult;

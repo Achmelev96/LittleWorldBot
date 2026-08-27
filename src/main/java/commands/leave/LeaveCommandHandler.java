@@ -1,7 +1,7 @@
 package commands.leave;
 
 import commands.SlashCommand;
-import voice.CurrentStatus;
+import interaction.CurrentStatus;
 import localization.MessageCatalog;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
@@ -21,10 +21,7 @@ public final class LeaveCommandHandler implements SlashCommand {
 
     @Override
     public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
-        event.deferReply(true).queue(ignored -> execute(event, context));
-    }
-
-    private void execute(SlashCommandInteractionEvent event, CurrentStatus context) {
+        event.deferReply(true).queue();
         LeaveResult result = leaveUseCase.execute(context);
         String message = switch (result) {
             case SUCCESS -> messages.get(context.language(), "leave.success");

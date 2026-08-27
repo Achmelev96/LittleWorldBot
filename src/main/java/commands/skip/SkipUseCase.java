@@ -3,7 +3,7 @@ package commands.skip;
 import audio.MusicCore;
 import audio.PlayerControlService;
 import audio.TrackUtils;
-import voice.CurrentStatus;
+import interaction.CurrentStatus;
 import voice.VoiceStateValidator;
 import voice.VoiceValidationResult;
 

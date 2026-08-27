@@ -1,6 +1,6 @@
 package commands.autocomplete;
 
-import voice.CurrentStatus;
+import interaction.CurrentStatus;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 
 public interface AutocompleteProvider {

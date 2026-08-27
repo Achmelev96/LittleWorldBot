@@ -1,5 +1,6 @@
 package voice;
 
+import interaction.CurrentStatus;
 import net.dv8tion.jda.api.Permission;
 
 public final class VoiceStateValidator {

@@ -22,14 +22,4 @@ public final class Config {
     public static String getOrDefault(String key, String defaultValue) {
         return properties.getProperty(key, defaultValue);
     }
-
-    public static long getLongOrDefault(String key, long defaultValue) {
-        String value = properties.getProperty(key);
-        if (value == null || value.isBlank()) return defaultValue;
-        try {
-            return Long.parseLong(value);
-        } catch (NumberFormatException error) {
-            throw new IllegalStateException("Config property " + key + " must be a valid number", error);
-        }
-    }
 }

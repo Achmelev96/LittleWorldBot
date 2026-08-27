@@ -1,24 +1,17 @@
 package commands.play;
 
 import commands.SlashCommand;
-import voice.CurrentStatus;
+import interaction.CurrentStatus;
 import localization.MessageCatalog;
-import musicpanel.MusicPanelService;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 public final class PlayCommandHandler implements SlashCommand {
     private final PlayUseCase playUseCase;
     private final MessageCatalog messages;
-    private final MusicPanelService panelService;
 
-    public PlayCommandHandler(
-            PlayUseCase playUseCase,
-            MessageCatalog messages,
-            MusicPanelService panelService
-    ) {
+    public PlayCommandHandler(PlayUseCase playUseCase, MessageCatalog messages) {
         this.playUseCase = playUseCase;
         this.messages = messages;
-        this.panelService = panelService;
     }
 
     @Override
@@ -28,10 +21,7 @@ public final class PlayCommandHandler implements SlashCommand {
 
     @Override
     public void handle(SlashCommandInteractionEvent event, CurrentStatus context) {
-        event.deferReply(true).queue(ignored -> execute(event, context));
-    }
-
-    private void execute(SlashCommandInteractionEvent event, CurrentStatus context) {
+        event.deferReply(false).queue();
         var queryOption = event.getOption("query");
         String query = queryOption == null ? "" : queryOption.getAsString();
 
@@ -41,23 +31,7 @@ public final class PlayCommandHandler implements SlashCommand {
                 event.getHook().editOriginal(messages.get(context.language(), "common.error")).queue();
                 return;
             }
-            String response = messageFor(context, result);
-            if (result instanceof PlayResult.Failure) {
-                event.getHook().editOriginal(response).queue();
-                return;
-            }
-
-            panelService.showOrMove(context.guild(), event.getChannel());
-            event.getChannel().sendMessage(response)
-                    .queue(
-                            ignored -> event.getHook().deleteOriginal().queue(),
-                            sendError -> {
-                                sendError.printStackTrace();
-                                event.getHook().editOriginal(
-                                        messages.get(context.language(), "common.error")
-                                ).queue();
-                            }
-                    );
+            event.getHook().editOriginal(messageFor(context, result)).queue();
         });
     }
 
