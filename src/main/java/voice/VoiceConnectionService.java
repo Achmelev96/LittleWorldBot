@@ -2,7 +2,6 @@ package voice;
 
 import audio.GuildHandler;
 import audio.MusicCore;
-import interaction.CurrentStatus;
 
 public final class VoiceConnectionService {
     private final MusicCore musicCore;
