@@ -13,6 +13,7 @@ final class MusicPanelState {
     boolean deleting;
     boolean editing;
     boolean refreshPending;
+    boolean moveToBottomRequested;
 
     void invalidate() {
         token = newToken();

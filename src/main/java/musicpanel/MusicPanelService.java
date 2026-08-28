@@ -37,6 +37,9 @@ public final class MusicPanelService {
         MusicPanelState state = states.computeIfAbsent(guild.getIdLong(), ignored -> new MusicPanelState());
         synchronized (state) {
             state.desiredChannel = channel;
+            if (state.message != null) {
+                state.moveToBottomRequested = true;
+            }
         }
         reconcile(guild, state);
     }
@@ -76,10 +79,20 @@ public final class MusicPanelService {
         synchronized (state) {
             if (!hasTrack) {
                 state.desiredChannel = null;
+                state.moveToBottomRequested = false;
                 deleteCurrent(guild, state);
                 return;
             }
             if (state.deleting || state.creating) return;
+            if (state.moveToBottomRequested && state.message != null) {
+                if (state.editing) {
+                    state.refreshPending = true;
+                    return;
+                }
+                state.moveToBottomRequested = false;
+                deleteCurrent(guild, state);
+                return;
+            }
             if (state.message != null && state.desiredChannel != null
                     && state.message.getChannel().getIdLong() != state.desiredChannel.getIdLong()) {
                 deleteCurrent(guild, state);
@@ -97,6 +110,7 @@ public final class MusicPanelService {
         MessageChannel channel = state.desiredChannel;
         if (channel == null) return;
         state.creating = true;
+        state.moveToBottomRequested = false;
         String token = state.token;
         BotLanguage language = languageService.getLanguage(guild.getIdLong());
         channel.sendMessageEmbeds(renderer.buildEmbed(handler, language).build())

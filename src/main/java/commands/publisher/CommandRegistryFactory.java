@@ -1,6 +1,7 @@
 package commands.publisher;
 
 import audio.MusicCore;
+import audio.YtDlpResolver;
 import commands.CommandRegistry;
 import commands.autocomplete.PlayQueryAutocomplete;
 import commands.leave.LeaveCommandHandler;
@@ -13,6 +14,9 @@ import localization.MessageCatalog;
 import musicpanel.MusicPanelService;
 import voice.VoiceConnectionService;
 import voice.VoiceStateValidator;
+import config.Config;
+
+import java.time.Duration;
 
 public final class CommandRegistryFactory {
     private CommandRegistryFactory() {
@@ -25,10 +29,14 @@ public final class CommandRegistryFactory {
     ) {
         var voiceValidator = new VoiceStateValidator();
         var voiceConnection = new VoiceConnectionService(musicCore);
+        var ytDlpResolver = new YtDlpResolver(
+                Config.get("YT_DLP_PATH"),
+                Duration.ofSeconds(45)
+        );
 
         var registry = new CommandRegistry();
         registry.registerSlash("play", new PlayCommandHandler(
-                new PlayUseCase(musicCore, voiceValidator, voiceConnection),
+                new PlayUseCase(musicCore, voiceValidator, voiceConnection, ytDlpResolver),
                 messages,
                 panelService
         ));

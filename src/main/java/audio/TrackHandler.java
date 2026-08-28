@@ -22,11 +22,14 @@ public class TrackHandler extends AudioEventAdapter {
         if (player.getPlayingTrack() == null && player.isPaused()) {
             player.setPaused(false);
         }
-        if (!player.startTrack(track, true)) {
+        boolean started = player.startTrack(track, true);
+        if (!started) {
             queue.offer(track);
-        } else {
-            System.out.println("[DEBUG] start: " + track.getInfo().title);
         }
+        System.out.println("[TrackHandler][queue] started=" + started
+                + ", queued=" + queue.size()
+                + ", identifier=" + track.getIdentifier()
+                + ", title=" + track.getInfo().title);
     }
 
     public synchronized void clearQueue() {
@@ -40,7 +43,7 @@ public class TrackHandler extends AudioEventAdapter {
     }
 
     // for skip
-    public AudioTrack nextTrack() {
+    public synchronized AudioTrack nextTrack() {
         var next = queue.poll();
         if (next == null) {
             player.stopTrack();
@@ -87,6 +90,10 @@ public class TrackHandler extends AudioEventAdapter {
 
     public boolean isQueueEmpty() {
         return queue.isEmpty();
+    }
+
+    public int getQueueSize() {
+        return queue.size();
     }
 
     @Override

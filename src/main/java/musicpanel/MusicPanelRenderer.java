@@ -1,6 +1,7 @@
 package musicpanel;
 
 import audio.GuildHandler;
+import audio.YtDlpResolvedTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import localization.BotLanguage;
@@ -22,14 +23,23 @@ public final class MusicPanelRenderer {
     public EmbedBuilder buildEmbed(GuildHandler handler, BotLanguage language) {
         AudioTrack track = handler.getPlayer().getPlayingTrack();
         AudioTrackInfo info = track.getInfo();
+        YtDlpResolvedTrack resolved = track.getUserData(YtDlpResolvedTrack.class);
+        String title = resolved == null ? info.title : resolved.title();
+        String author = resolved == null ? info.author : resolved.author();
         EmbedBuilder embed = new EmbedBuilder()
                 .setColor(PANEL_COLOR)
-                .setTitle(safeTitle(info.title, language));
+                .setTitle(safeTitle(title, language));
 
-        if (info.author != null && !info.author.isBlank()) {
-            embed.setAuthor(info.author);
+        if (author != null && !author.isBlank()) {
+            embed.setAuthor(author);
         }
-        String thumbnail = thumbnailUrl(info.uri);
+        String thumbnail = resolved == null ? null : resolved.thumbnailUrl();
+        if (thumbnail == null && resolved != null) {
+            thumbnail = thumbnailUrl(resolved.webpageUrl());
+        }
+        if (thumbnail == null) {
+            thumbnail = thumbnailUrl(info.uri);
+        }
         if (thumbnail != null) {
             embed.setThumbnail(thumbnail);
         }

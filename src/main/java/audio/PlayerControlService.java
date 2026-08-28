@@ -16,7 +16,6 @@ public final class PlayerControlService {
             return new SkipResult(null, null);
         }
 
-        player.stopTrack();
         AudioTrack next = scheduler.nextTrack();
 
         if (next == null) {

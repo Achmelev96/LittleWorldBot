@@ -47,10 +47,12 @@ public final class PlayCommandHandler implements SlashCommand {
                 return;
             }
 
-            panelService.showOrMove(context.guild(), event.getChannel());
             event.getChannel().sendMessage(response)
                     .queue(
-                            ignored -> event.getHook().deleteOriginal().queue(),
+                            ignored -> {
+                                panelService.showOrMove(context.guild(), event.getChannel());
+                                event.getHook().deleteOriginal().queue();
+                            },
                             sendError -> {
                                 sendError.printStackTrace();
                                 event.getHook().editOriginal(

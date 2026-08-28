@@ -2,9 +2,12 @@ package commands.play;
 
 import audio.MusicCore;
 import audio.TrackUtils;
+import audio.YtDlpResolvedTrack;
+import audio.YtDlpResolver;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import commands.urlBuild.IdentifierBuilder;
 import voice.CurrentStatus;
@@ -19,15 +22,18 @@ public final class PlayUseCase {
     private final MusicCore musicCore;
     private final VoiceStateValidator voiceValidator;
     private final VoiceConnectionService voiceConnection;
+    private final YtDlpResolver ytDlpResolver;
 
     public PlayUseCase(
             MusicCore musicCore,
             VoiceStateValidator voiceValidator,
-            VoiceConnectionService voiceConnection
+            VoiceConnectionService voiceConnection,
+            YtDlpResolver ytDlpResolver
     ) {
         this.musicCore = musicCore;
         this.voiceValidator = voiceValidator;
         this.voiceConnection = voiceConnection;
+        this.ytDlpResolver = ytDlpResolver;
     }
 
     public CompletionStage<PlayResult> execute(CurrentStatus context, String rawQuery) {
@@ -63,15 +69,60 @@ public final class PlayUseCase {
             return failure(PlayResult.FailureReason.CONNECTION_FAILED);
         }
 
+        if (ytDlpResolver.isConfigured() && isYoutubeIdentifier(identifier)) {
+            return ytDlpResolver.resolve(identifier)
+                    .thenCompose(resolved -> loadResolvedTrack(guild, guildHandler, resolved))
+                    .exceptionally(error -> {
+                        Throwable cause = unwrap(error);
+                        System.err.println("[PlayUseCase][yt-dlp] " + cause.getMessage());
+                        cause.printStackTrace();
+                        scheduleAfkIfIdle(guild.getIdLong());
+                        return new PlayResult.Failure(
+                                PlayResult.FailureReason.LOAD_FAILED,
+                                cause.getMessage()
+                        );
+                    });
+        }
+        return loadIdentifier(guild, guildHandler, identifier);
+    }
+
+    private CompletionStage<PlayResult> loadResolvedTrack(
+            net.dv8tion.jda.api.entities.Guild guild,
+            audio.GuildHandler guildHandler,
+            YtDlpResolvedTrack resolved
+    ) {
+        AudioReference reference = new AudioReference(resolved.streamUrl(), resolved.title());
+        return loadItem(guild, guildHandler, reference, resolved);
+    }
+
+    private CompletionStage<PlayResult> loadIdentifier(
+            net.dv8tion.jda.api.entities.Guild guild,
+            audio.GuildHandler guildHandler,
+            String identifier
+    ) {
+        return loadItem(guild, guildHandler, identifier, null);
+    }
+
+    private CompletionStage<PlayResult> loadItem(
+            net.dv8tion.jda.api.entities.Guild guild,
+            audio.GuildHandler guildHandler,
+            Object reference,
+            YtDlpResolvedTrack resolved
+    ) {
         CompletableFuture<PlayResult> result = new CompletableFuture<>();
-        musicCore.getPlayerManager().loadItemOrdered(guild, identifier, new AudioLoadResultHandler() {
+        AudioLoadResultHandler handler = new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack track) {
+                if (resolved != null) {
+                    track.setUserData(resolved);
+                }
                 guildHandler.getScheduler().queue(track);
                 musicCore.cancelAfkDisconnect(guild.getIdLong());
+                String title = resolved == null ? track.getInfo().title : resolved.title();
+                long duration = resolved == null ? track.getInfo().length : resolved.durationMs();
                 result.complete(new PlayResult.TrackQueued(
-                        track.getInfo().title,
-                        TrackUtils.formatDuration(track.getInfo().length)
+                        title,
+                        TrackUtils.formatDuration(duration)
                 ));
             }
 
@@ -116,8 +167,29 @@ public final class PlayUseCase {
                         exception.getMessage()
                 ));
             }
-        });
+        };
+        if (reference instanceof AudioReference audioReference) {
+            musicCore.getPlayerManager().loadItemOrdered(guild, audioReference, handler);
+        } else {
+            musicCore.getPlayerManager().loadItemOrdered(guild, reference.toString(), handler);
+        }
         return result;
+    }
+
+    private boolean isYoutubeIdentifier(String identifier) {
+        return identifier.startsWith("ytsearch:")
+                || identifier.contains("youtube.com/")
+                || identifier.contains("youtu.be/");
+    }
+
+    private Throwable unwrap(Throwable error) {
+        Throwable current = error;
+        while (current.getCause() != null
+                && (current instanceof java.util.concurrent.CompletionException
+                || current instanceof java.util.concurrent.ExecutionException)) {
+            current = current.getCause();
+        }
+        return current;
     }
 
     private CompletionStage<PlayResult> failure(PlayResult.FailureReason reason) {
