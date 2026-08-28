@@ -2,6 +2,7 @@ package audio;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 
@@ -18,11 +19,17 @@ public class TrackHandler extends AudioEventAdapter {
     }
 
     public synchronized void queue(AudioTrack track) {
-        if (!player.startTrack(track, true)) {
-            queue.offer(track);
-        } else {
-            System.out.println("[DEBUG] start: " + track.getInfo().title);
+        if (player.getPlayingTrack() == null && player.isPaused()) {
+            player.setPaused(false);
         }
+        boolean started = player.startTrack(track, true);
+        if (!started) {
+            queue.offer(track);
+        }
+        System.out.println("[TrackHandler][queue] started=" + started
+                + ", queued=" + queue.size()
+                + ", identifier=" + track.getIdentifier()
+                + ", title=" + track.getInfo().title);
     }
 
     public synchronized void clearQueue() {
@@ -32,10 +39,11 @@ public class TrackHandler extends AudioEventAdapter {
     public synchronized void stopAll() {
         queue.clear();
         player.stopTrack();
+        player.setPaused(false);
     }
 
     // for skip
-    public AudioTrack nextTrack() {
+    public synchronized AudioTrack nextTrack() {
         var next = queue.poll();
         if (next == null) {
             player.stopTrack();
@@ -47,6 +55,9 @@ public class TrackHandler extends AudioEventAdapter {
 
     @Override
     public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
+        System.out.println("[TrackHandler][end] reason=" + endReason
+                + ", title=" + track.getInfo().title
+                + ", uri=" + track.getInfo().uri);
         if (endReason.mayStartNext) {
             var started = nextTrack();
             if (started == null) {
@@ -57,18 +68,38 @@ public class TrackHandler extends AudioEventAdapter {
                 audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);
             }
         }
-        audio.MusicCore.getInstance().findGuildByPlayer(player).ifPresent(guild -> commands.MusicPanelHandler.getInstance().showOrUpdate(guild));
+        audio.MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
+    }
+
+    @Override
+    public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
+        System.err.println("[TrackHandler][exception] severity=" + exception.severity
+                + ", title=" + track.getInfo().title
+                + ", uri=" + track.getInfo().uri
+                + ", position=" + track.getPosition());
+        exception.printStackTrace();
+    }
+
+    @Override
+    public void onTrackStuck(AudioPlayer player, AudioTrack track, long thresholdMs) {
+        System.err.println("[TrackHandler][stuck] thresholdMs=" + thresholdMs
+                + ", title=" + track.getInfo().title
+                + ", uri=" + track.getInfo().uri
+                + ", position=" + track.getPosition());
     }
 
     public boolean isQueueEmpty() {
         return queue.isEmpty();
     }
 
+    public int getQueueSize() {
+        return queue.size();
+    }
+
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
         audio.MusicCore.getInstance().cancelAfkDisconnectByPlayer(player);
-        audio.MusicCore.getInstance().findGuildByPlayer(player).ifPresent(guild -> commands.MusicPanelHandler.getInstance().showOrUpdate(guild));
+        audio.MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
     }
-
-
+    // little change
 }
