@@ -6,6 +6,7 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -30,6 +31,10 @@ public class TrackHandler extends AudioEventAdapter {
                 + ", queued=" + queue.size()
                 + ", identifier=" + track.getIdentifier()
                 + ", title=" + track.getInfo().title);
+    }
+
+    public synchronized void queueAll(List<AudioTrack> tracks) {
+        tracks.forEach(this::queue);
     }
 
     public synchronized void clearQueue() {

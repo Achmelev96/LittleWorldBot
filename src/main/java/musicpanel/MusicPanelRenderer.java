@@ -1,7 +1,7 @@
 package musicpanel;
 
 import audio.GuildHandler;
-import audio.YtDlpResolvedTrack;
+import audio.youTube.YtDlpResolvedTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import localization.BotLanguage;

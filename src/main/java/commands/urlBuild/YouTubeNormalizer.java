@@ -8,39 +8,41 @@ final class YouTubeNormalizer {
     private YouTubeNormalizer() {}
 
     static boolean isYoutube(URI uri) {
+        String scheme = uri.getScheme();
         String host = UrlUtils.getHostLower(uri);
-        return host.contains("youtube.com") || host.contains("youtu.be");
+        return ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))
+                && (host.equals("youtube.com") || host.endsWith(".youtube.com") || host.equals("youtu.be"));
     }
 
     static String normalize(URI uri) {
         String host = UrlUtils.getHostLower(uri);
         String path = UrlUtils.getPathOrEmpty(uri);
+        Map<String, String> params = UrlUtils.parseQuery(uri.getRawQuery());
+        String playlistId = params.get("list");
+
+        boolean isRegularPlaylist = playlistId != null && playlistId.matches("[A-Za-z0-9_-]+")
+                && !UrlUtils.isRadioPlaylistId(playlistId) && !params.containsKey("start_radio");
+        String playlistUrl = isRegularPlaylist ? "https://youtube.com/playlist?list=" + playlistId : null;
 
         if (UrlUtils.isPlaylistUrl(uri)) {
-            String playlistId = UrlUtils.getPlaylistId(uri);
-            if (playlistId == null || playlistId.isBlank()) {
-                return uri.toString();
-            }
-            return "https://youtube.com/playlist?list=" + playlistId;
+            return playlistUrl;
         }
 
-        if (host.contains("youtu.be")) {
-            String videoId = UrlUtils.getFirstSegment(path);
-            if (videoId == null || videoId.isBlank()) {
-                return uri.toString();
-            }
-            return "https://youtube.com/watch?v=" + videoId;
+        String videoId;
+        if (host.equals("youtu.be")) {
+            videoId = UrlUtils.getFirstSegment(path);
+        } else if ("/watch".equals(path)) {
+            videoId = params.get("v");
+        } else if (path.startsWith("/shorts/") || path.startsWith("/live/") || path.startsWith("/embed/")) {
+            videoId = UrlUtils.getFirstSegment(path.substring(path.indexOf('/', 1)));
+        } else {
+            return playlistId == null && !params.containsKey("start_radio") ? uri.toString() : null;
         }
 
-        if ("/watch".equals(path)) {
-            Map<String, String> queryParams = UrlUtils.parseQuery(uri.getRawQuery());
-            String videoId = queryParams.get("v");
+        if (playlistUrl != null) return playlistUrl;
 
-            if (videoId == null || videoId.isBlank()) {
-                return uri.toString();
-            }
-            return "https://youtube.com/watch?v=" + videoId;
-        }
-        return uri.toString();
+        return videoId != null && videoId.matches("[A-Za-z0-9_-]{11}")
+                ? "https://youtube.com/watch?v=" + videoId
+                : null;
     }
 }
