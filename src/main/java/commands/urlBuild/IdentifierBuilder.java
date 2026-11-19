@@ -5,6 +5,18 @@ import java.net.URI;
 public final class IdentifierBuilder {
     private IdentifierBuilder() {}
 
+    public static boolean isYouTubePlaylist(String identifier) {
+        URI uri = UrlUtils.tryParse(identifier);
+        return uri != null && YouTubeNormalizer.isYoutube(uri) && UrlUtils.isPlaylistUrl(uri);
+    }
+
+    public static boolean isYouTubeIdentifier(String identifier) {
+        if (identifier.startsWith("ytsearch:")) return true;
+
+        URI uri = UrlUtils.tryParse(identifier);
+        return uri != null && YouTubeNormalizer.isYoutube(uri);
+    }
+
     public static String build(String rawInput) {
         if (rawInput == null) return null;
 
@@ -17,14 +29,6 @@ public final class IdentifierBuilder {
         }
 
         if (YouTubeNormalizer.isYoutube(uri)) {
-            String playlistId = UrlUtils.getPlaylistId(uri);
-
-            if (UrlUtils.isPlaylistUrl(uri)) {
-                if (playlistId != null && !UrlUtils.isRadioPlaylistId(playlistId)) {
-                    return YouTubeNormalizer.normalize(uri);
-                }
-                return YouTubeNormalizer.normalize(uri);
-            }
             return YouTubeNormalizer.normalize(uri);
         }
         return trimmed;

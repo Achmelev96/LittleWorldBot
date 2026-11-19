@@ -2,8 +2,8 @@ package commands.play;
 
 import audio.MusicCore;
 import audio.TrackUtils;
-import audio.YtDlpResolvedTrack;
-import audio.YtDlpResolver;
+import audio.youTube.YtDlpResolvedTrack;
+import audio.youTube.YtDlpResolver;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
@@ -37,11 +37,12 @@ public final class PlayUseCase {
     }
 
     public CompletionStage<PlayResult> execute(CurrentStatus context, String rawQuery) {
-        String identifier = IdentifierBuilder.build(rawQuery == null ? "" : rawQuery);
-        if (identifier == null || identifier.isBlank()) {
-            return CompletableFuture.completedFuture(
-                    new PlayResult.Failure(PlayResult.FailureReason.EMPTY_QUERY)
-            );
+        if (rawQuery == null || rawQuery.trim().isEmpty()) {
+            return failure(PlayResult.FailureReason.EMPTY_QUERY);
+        }
+        String identifier = IdentifierBuilder.build(rawQuery);
+        if (identifier == null) {
+            return failure(PlayResult.FailureReason.NO_MATCHES);
         }
 
         VoiceValidationResult userState = voiceValidator.requireUserInVoice(context);
@@ -69,20 +70,21 @@ public final class PlayUseCase {
             return failure(PlayResult.FailureReason.CONNECTION_FAILED);
         }
 
-        if (ytDlpResolver.isConfigured() && isYoutubeIdentifier(identifier)) {
-            return ytDlpResolver.resolve(identifier)
-                    .thenCompose(resolved -> loadResolvedTrack(guild, guildHandler, resolved))
-                    .exceptionally(error -> {
-                        Throwable cause = unwrap(error);
-                        System.err.println("[PlayUseCase][yt-dlp] " + cause.getMessage());
-                        cause.printStackTrace();
-                        scheduleAfkIfIdle(guild.getIdLong());
-                        return new PlayResult.Failure(
-                                PlayResult.FailureReason.LOAD_FAILED,
-                                cause.getMessage()
-                        );
-                    });
+        if (ytDlpResolver.isConfigured() && IdentifierBuilder.isYouTubeIdentifier(identifier)) {
+            CompletionStage<PlayResult> loading = IdentifierBuilder.isYouTubePlaylist(identifier)
+                    ? ytDlpResolver.resolvePlaylist(identifier, musicCore.getPlayerManager())
+                            .thenApply(playlist -> queuePlaylist(guild.getIdLong(), guildHandler, playlist))
+                    : ytDlpResolver.resolve(identifier)
+                            .thenCompose(resolved -> loadResolvedTrack(guild, guildHandler, resolved));
+            return loading.exceptionally(error -> {
+                Throwable cause = unwrap(error);
+                System.err.println("[PlayUseCase][yt-dlp] " + cause.getMessage());
+                cause.printStackTrace();
+                scheduleAfkIfIdle(guild.getIdLong());
+                return new PlayResult.Failure(PlayResult.FailureReason.LOAD_FAILED, cause.getMessage());
+            });
         }
+
         return loadIdentifier(guild, guildHandler, identifier);
     }
 
@@ -129,6 +131,7 @@ public final class PlayUseCase {
             @Override
             public void playlistLoaded(AudioPlaylist playlist) {
                 if (playlist.getTracks().isEmpty()) {
+                    scheduleAfkIfIdle(guild.getIdLong());
                     result.complete(new PlayResult.Failure(PlayResult.FailureReason.NO_MATCHES));
                     return;
                 }
@@ -141,14 +144,7 @@ public final class PlayUseCase {
                     return;
                 }
 
-                int trackCount = 0;
-                for (AudioTrack track : playlist.getTracks()) {
-                    guildHandler.getScheduler().queue(track);
-                    trackCount++;
-                }
-
-                musicCore.cancelAfkDisconnect(guild.getIdLong());
-                result.complete(new PlayResult.PlaylistQueued(playlist.getName(), trackCount));
+                result.complete(queuePlaylist(guild.getIdLong(), guildHandler, playlist));
             }
 
             @Override
@@ -176,10 +172,16 @@ public final class PlayUseCase {
         return result;
     }
 
-    private boolean isYoutubeIdentifier(String identifier) {
-        return identifier.startsWith("ytsearch:")
-                || identifier.contains("youtube.com/")
-                || identifier.contains("youtu.be/");
+    private PlayResult queuePlaylist(long guildId, audio.GuildHandler guildHandler, AudioPlaylist playlist) {
+        var tracks = playlist.getTracks();
+        if (tracks.isEmpty()) {
+            scheduleAfkIfIdle(guildId);
+            return new PlayResult.Failure(PlayResult.FailureReason.NO_MATCHES);
+        }
+
+        guildHandler.getScheduler().queueAll(tracks);
+        musicCore.cancelAfkDisconnect(guildId);
+        return new PlayResult.PlaylistQueued(playlist.getName(), tracks.size());
     }
 
     private Throwable unwrap(Throwable error) {

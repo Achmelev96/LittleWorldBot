@@ -1,7 +1,7 @@
 package commands.publisher;
 
 import audio.MusicCore;
-import audio.YtDlpResolver;
+import audio.youTube.YtDlpResolver;
 import commands.CommandRegistry;
 import commands.autocomplete.PlayQueryAutocomplete;
 import commands.leave.LeaveCommandHandler;
