@@ -1,5 +1,7 @@
-package audio;
+package audio.playback;
 
+import audio.GuildHandler;
+import audio.MusicCore;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
 public final class PlayerControlService {
