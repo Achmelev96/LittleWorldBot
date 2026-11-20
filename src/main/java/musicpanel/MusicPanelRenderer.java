@@ -63,7 +63,11 @@ public final class MusicPanelRenderer {
 
         ActionRow controls = ActionRow.of(buttons);
         if (playlist != null && playlist.playlistId().equals(openPlaylistId)) {
-            return List.of(controls, PlaylistMenu.build(prefix + "playlist", playlist, language, messages));
+            return List.of(
+                    controls,
+                    PlaylistMenu.build(prefix + "playlist", playlist, language, messages),
+                    ActionRow.of(Button.secondary(prefix + "skip-playlist:" + playlist.playlistId(), "Skip playlist"))
+            );
         }
         return List.of(controls);
     }

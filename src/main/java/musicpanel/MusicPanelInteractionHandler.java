@@ -52,13 +52,23 @@ public final class MusicPanelInteractionHandler {
             openLanguageMenu(event, guild);
             return;
         }
-        if (!"toggle".equals(id[2]) && !"skip".equals(id[2]) && !"list".equals(id[2])) return;
+        boolean skipPlaylist = id[2].startsWith("skip-playlist:");
+        if (!"toggle".equals(id[2]) && !"skip".equals(id[2]) && !"list".equals(id[2]) && !skipPlaylist) return;
         if (!isInBotVoiceChannel(event.getMember(), guild)) {
             replyEphemeral(event, languageFor(guild), "panel.same_channel_required");
             return;
         }
 
         GuildHandler handler = musicCore.getGuildHandler(guild);
+        if (skipPlaylist) {
+            if (handler.getScheduler().skipPlaylist(id[2].substring("skip-playlist:".length()))) {
+                event.deferEdit().queue();
+            } else {
+                replyEphemeral(event, languageFor(guild), "panel.playlist_changed");
+            }
+            panelService.refresh(guild);
+            return;
+        }
         if ("list".equals(id[2])) {
             var playlist = handler.getScheduler().playlistWindow(handler.getPlayer().getPlayingTrack());
             if (playlist == null) {

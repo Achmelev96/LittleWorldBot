@@ -68,6 +68,16 @@ final class PlaybackQueue {
         return advance();
     }
 
+    boolean discardPlaylist(String playlistId, AudioTrack playing) {
+        Entry entry = current;
+        if (entry == null || entry.track() != playing || entry.playlist() == null
+                || !entry.playlist().id().equals(playlistId)) {
+            return false;
+        }
+        pending.removeIf(item -> item.playlist() == entry.playlist());
+        return true;
+    }
+
     void clear() {
         pending.clear();
         current = null;

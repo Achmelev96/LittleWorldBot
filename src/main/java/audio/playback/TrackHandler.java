@@ -71,6 +71,14 @@ public class TrackHandler extends AudioEventAdapter {
         return new SkipResult(previous, next);
     }
 
+    public synchronized boolean skipPlaylist(String playlistId) {
+        if (!queue.discardPlaylist(playlistId, player.getPlayingTrack())) return false;
+
+        nextTrack();
+        if (player.isPaused()) player.setPaused(false);
+        return true;
+    }
+
     public record SkipResult(AudioTrack previous, AudioTrack current) {
         public boolean skipped() {
             return previous != null;
