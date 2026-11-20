@@ -14,6 +14,9 @@ public class TrackHandler extends AudioEventAdapter {
     private final AudioPlayer player;
     private final PlaybackQueue queue = new PlaybackQueue();
 
+    private AudioTrack skipTarget;
+    private AudioTrack failedSkipTarget;
+
     public TrackHandler(AudioPlayer player) {
         this.player = player;
     }
@@ -37,6 +40,8 @@ public class TrackHandler extends AudioEventAdapter {
 
     public synchronized void clearQueue() {
         queue.clear();
+        skipTarget = null;
+        failedSkipTarget = null;
     }
 
     public synchronized void stopAll() {
@@ -46,9 +51,30 @@ public class TrackHandler extends AudioEventAdapter {
     }
 
     public synchronized AudioTrack nextTrack() {
+        skipTarget = null;
+        failedSkipTarget = null;
         AudioTrack next = queue.advance();
         player.startTrack(next, false);
         return next;
+    }
+
+    public synchronized SkipResult skip(AudioTrack expected) {
+        AudioTrack previous = expected == null ? failedSkipTarget : expected;
+        if (previous == null || !queue.isCurrent(previous)) {
+            return new SkipResult(null, null);
+        }
+
+        AudioTrack next = queue.advance();
+        failedSkipTarget = null;
+        skipTarget = queue.isPlaylistTrack(next) ? next : null;
+        player.startTrack(next, false);
+        return new SkipResult(previous, next);
+    }
+
+    public record SkipResult(AudioTrack previous, AudioTrack current) {
+        public boolean skipped() {
+            return previous != null;
+        }
     }
 
     public PlaylistWindow playlistWindow(AudioTrack playing) {
@@ -65,6 +91,8 @@ public class TrackHandler extends AudioEventAdapter {
         AudioTrack next = queue.jump(window, playlistId, index);
         if (next == null) return false;
 
+        skipTarget = null;
+        failedSkipTarget = null;
         player.startTrack(next, false);
         if (player.isPaused()) player.setPaused(false);
         return true;
@@ -77,7 +105,7 @@ public class TrackHandler extends AudioEventAdapter {
                 + ", uri=" + track.getInfo().uri);
         if (endReason.mayStartNext) {
             // LavaPlayer can dispatch this event while holding its track switch lock.
-            CompletableFuture.runAsync(() -> advanceAfterEnd(track));
+            CompletableFuture.runAsync(() -> advanceAfterEnd(track, endReason));
             return;
         }
         if (player.getPlayingTrack() == null && queue.isEmpty()) {
@@ -86,10 +114,18 @@ public class TrackHandler extends AudioEventAdapter {
         MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
     }
 
-    private synchronized void advanceAfterEnd(AudioTrack ended) {
+    private synchronized void advanceAfterEnd(AudioTrack ended, AudioTrackEndReason reason) {
         if (player.getPlayingTrack() != null) return;
 
-        if (queue.isCurrent(ended) && nextTrack() != null) return;
+        if (queue.isCurrent(ended)) {
+            if (ended == skipTarget && reason == AudioTrackEndReason.LOAD_FAILED) {
+                // A manual skip should attempt just one playlist entry.
+                skipTarget = null;
+                failedSkipTarget = ended;
+            } else if (nextTrack() != null) {
+                return;
+            }
+        }
 
         if (queue.isEmpty()) {
             MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);

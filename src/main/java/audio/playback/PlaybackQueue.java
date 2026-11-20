@@ -33,6 +33,11 @@ final class PlaybackQueue {
         return entry != null && entry.track() == track;
     }
 
+    boolean isPlaylistTrack(AudioTrack track) {
+        Entry entry = current;
+        return entry != null && entry.track() == track && entry.playlist() != null;
+    }
+
     PlaylistWindow window(AudioTrack playing) {
         Entry entry = current;
         return entry != null && entry.track() == playing && entry.playlist() != null
