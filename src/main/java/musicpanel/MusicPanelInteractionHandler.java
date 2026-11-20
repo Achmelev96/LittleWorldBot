@@ -2,7 +2,7 @@ package musicpanel;
 
 import audio.GuildHandler;
 import audio.MusicCore;
-import audio.PlayerControlService;
+import audio.playback.PlayerControlService;
 import localization.BotLanguage;
 import localization.MessageCatalog;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent;
+import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback;
 import settings.GuildLanguageService;
 import settings.SettingsAccessPolicy;
 
@@ -51,13 +52,25 @@ public final class MusicPanelInteractionHandler {
             openLanguageMenu(event, guild);
             return;
         }
-        if (!"toggle".equals(id[2]) && !"skip".equals(id[2])) return;
+        if (!"toggle".equals(id[2]) && !"skip".equals(id[2]) && !"list".equals(id[2])) return;
         if (!isInBotVoiceChannel(event.getMember(), guild)) {
             replyEphemeral(event, languageFor(guild), "panel.same_channel_required");
             return;
         }
 
         GuildHandler handler = musicCore.getGuildHandler(guild);
+        if ("list".equals(id[2])) {
+            var playlist = handler.getScheduler().playlistWindow(handler.getPlayer().getPlayingTrack());
+            if (playlist == null) {
+                replyEphemeral(event, languageFor(guild), "panel.playlist_changed");
+                panelService.refresh(guild);
+                return;
+            }
+            event.deferEdit().queue();
+            panelService.togglePlaylist(guild, id[1], event.getMessageIdLong(), playlist.playlistId());
+            return;
+        }
+
         event.deferEdit().queue();
         if ("toggle".equals(id[2])) {
             if (handler.getPlayer().getPlayingTrack() != null) {
@@ -70,7 +83,13 @@ public final class MusicPanelInteractionHandler {
     }
 
     public void handle(StringSelectInteractionEvent event) {
-        if (!LANGUAGE_SELECT_ID.equals(event.getComponentId())) return;
+        String componentId = event.getComponentId();
+        String[] id = componentId.split(":", 3);
+        if (id.length == 3 && "music".equals(id[0]) && "playlist".equals(id[2])) {
+            selectPlaylistTrack(event, id[1]);
+            return;
+        }
+        if (!LANGUAGE_SELECT_ID.equals(componentId)) return;
         Guild guild = event.getGuild();
         Member member = event.getMember();
         BotLanguage current = languageFor(guild);
@@ -93,6 +112,44 @@ public final class MusicPanelInteractionHandler {
         event.editMessage(messages.get(selected, "settings.language_updated"))
                 .setComponents()
                 .queue();
+        panelService.refresh(guild);
+    }
+
+    private void selectPlaylistTrack(StringSelectInteractionEvent event, String token) {
+        Guild guild = event.getGuild();
+        BotLanguage language = languageFor(guild);
+        if (guild == null || !panelService.isActive(guild.getIdLong(), token, event.getMessageIdLong())) {
+            replyEphemeral(event, language, "panel.expired");
+            return;
+        }
+        if (!isInBotVoiceChannel(event.getMember(), guild)) {
+            replyEphemeral(event, language, "panel.same_channel_required");
+            return;
+        }
+
+        if (event.getValues().size() != 1) {
+            replyEphemeral(event, language, "panel.playlist_changed");
+            return;
+        }
+        String[] selection = event.getValues().getFirst().split(":", 2);
+        if (selection.length != 2) {
+            replyEphemeral(event, language, "panel.playlist_changed");
+            return;
+        }
+        int index;
+        try {
+            index = Integer.parseInt(selection[1]);
+        } catch (NumberFormatException ignored) {
+            replyEphemeral(event, language, "panel.playlist_changed");
+            return;
+        }
+
+        GuildHandler handler = musicCore.getGuildHandler(guild);
+        if (handler.getScheduler().jumpToPlaylistTrack(selection[0], index)) {
+            event.deferEdit().queue();
+        } else {
+            replyEphemeral(event, language, "panel.playlist_changed");
+        }
         panelService.refresh(guild);
     }
 
@@ -127,7 +184,7 @@ public final class MusicPanelInteractionHandler {
         return guild == null ? BotLanguage.ENGLISH : languageService.getLanguage(guild.getIdLong());
     }
 
-    private void replyEphemeral(ButtonInteractionEvent event, BotLanguage language, String key) {
+    private void replyEphemeral(IReplyCallback event, BotLanguage language, String key) {
         event.reply(messages.get(language, key)).setEphemeral(true).queue();
     }
 }

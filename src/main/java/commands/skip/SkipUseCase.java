@@ -1,8 +1,8 @@
 package commands.skip;
 
 import audio.MusicCore;
-import audio.PlayerControlService;
-import audio.TrackUtils;
+import audio.playback.PlayerControlService;
+import audio.playback.TrackUtils;
 import voice.CurrentStatus;
 import voice.VoiceStateValidator;
 import voice.VoiceValidationResult;

@@ -1,4 +1,4 @@
-package audio;
+package audio.playback;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 

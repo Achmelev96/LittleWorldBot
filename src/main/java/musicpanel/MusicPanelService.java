@@ -2,6 +2,7 @@ package musicpanel;
 
 import audio.GuildHandler;
 import audio.MusicCore;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import localization.BotLanguage;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -61,6 +62,16 @@ public final class MusicPanelService {
         }
     }
 
+    public void togglePlaylist(Guild guild, String token, long messageId, String playlistId) {
+        MusicPanelState state = states.get(guild.getIdLong());
+        if (state == null) return;
+        synchronized (state) {
+            if (!isActive(guild.getIdLong(), token, messageId)) return;
+            state.openPlaylistId = playlistId.equals(state.openPlaylistId) ? null : playlistId;
+        }
+        reconcile(guild, state);
+    }
+
     public void cleanupPersistedPanels(JDA jda) {
         for (StoredMusicPanel panel : repository.findAll()) {
             repository.delete(panel.guildId());
@@ -75,9 +86,9 @@ public final class MusicPanelService {
 
     private void reconcile(Guild guild, MusicPanelState state) {
         GuildHandler handler = musicCore.getGuildHandler(guild);
-        boolean hasTrack = handler.getPlayer().getPlayingTrack() != null;
         synchronized (state) {
-            if (!hasTrack) {
+            AudioTrack track = handler.getPlayer().getPlayingTrack();
+            if (track == null) {
                 state.desiredChannel = null;
                 state.moveToBottomRequested = false;
                 deleteCurrent(guild, state);
@@ -99,22 +110,23 @@ public final class MusicPanelService {
                 return;
             }
             if (state.message == null) {
-                create(guild, state, handler);
+                create(guild, state, handler, track);
                 return;
             }
-            edit(guild, state, handler);
+            edit(guild, state, handler, track);
         }
     }
 
-    private void create(Guild guild, MusicPanelState state, GuildHandler handler) {
+    private void create(Guild guild, MusicPanelState state, GuildHandler handler, AudioTrack track) {
         MessageChannel channel = state.desiredChannel;
         if (channel == null) return;
         state.creating = true;
         state.moveToBottomRequested = false;
         String token = state.token;
         BotLanguage language = languageService.getLanguage(guild.getIdLong());
-        channel.sendMessageEmbeds(renderer.buildEmbed(handler, language).build())
-                .setComponents(renderer.buildControls(handler, token))
+        channel.sendMessageEmbeds(renderer.buildEmbed(track, language).build())
+                .setComponents(renderer.buildControls(handler.getPlayer().isPaused(), token,
+                        handler.getScheduler().playlistWindow(track), state.openPlaylistId, language))
                 .queue(message -> onCreated(guild, state, message), error -> {
                     System.err.println("[MusicPanel] Could not create panel for guild " + guild.getId());
                     error.printStackTrace();
@@ -134,7 +146,7 @@ public final class MusicPanelService {
         reconcile(guild, state);
     }
 
-    private void edit(Guild guild, MusicPanelState state, GuildHandler handler) {
+    private void edit(Guild guild, MusicPanelState state, GuildHandler handler, AudioTrack track) {
         if (state.message == null) return;
         if (state.editing) {
             state.refreshPending = true;
@@ -144,8 +156,9 @@ public final class MusicPanelService {
         Message message = state.message;
         String token = state.token;
         BotLanguage language = languageService.getLanguage(guild.getIdLong());
-        message.editMessageEmbeds(renderer.buildEmbed(handler, language).build())
-                .setComponents(renderer.buildControls(handler, token))
+        message.editMessageEmbeds(renderer.buildEmbed(track, language).build())
+                .setComponents(renderer.buildControls(handler.getPlayer().isPaused(), token,
+                        handler.getScheduler().playlistWindow(track), state.openPlaylistId, language))
                 .queue(ignored -> {
                     boolean refreshAgain;
                     synchronized (state) {
