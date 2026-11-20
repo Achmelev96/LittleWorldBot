@@ -9,6 +9,7 @@ final class MusicPanelState {
     MessageChannel desiredChannel;
     Message message;
     String token = newToken();
+    String openPlaylistId;
     boolean creating;
     boolean deleting;
     boolean editing;
@@ -17,6 +18,7 @@ final class MusicPanelState {
 
     void invalidate() {
         token = newToken();
+        openPlaylistId = null;
     }
 
     private static String newToken() {

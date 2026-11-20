@@ -1,5 +1,6 @@
-package audio;
+package audio.playback;
 
+import audio.MusicCore;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
@@ -7,34 +8,31 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.CompletableFuture;
 
 public class TrackHandler extends AudioEventAdapter {
     private final AudioPlayer player;
-    private final BlockingQueue<AudioTrack> queue;
+    private final PlaybackQueue queue = new PlaybackQueue();
 
     public TrackHandler(AudioPlayer player) {
         this.player = player;
-        this.queue = new LinkedBlockingDeque<>();
     }
 
     public synchronized void queue(AudioTrack track) {
-        if (player.getPlayingTrack() == null && player.isPaused()) {
-            player.setPaused(false);
-        }
-        boolean started = player.startTrack(track, true);
-        if (!started) {
-            queue.offer(track);
-        }
-        System.out.println("[TrackHandler][queue] started=" + started
-                + ", queued=" + queue.size()
-                + ", identifier=" + track.getIdentifier()
-                + ", title=" + track.getInfo().title);
+        queue.add(track);
+        startIfIdle();
     }
 
-    public synchronized void queueAll(List<AudioTrack> tracks) {
-        tracks.forEach(this::queue);
+    public synchronized void queuePlaylist(List<AudioTrack> tracks) {
+        queue.addPlaylist(tracks);
+        startIfIdle();
+    }
+
+    private void startIfIdle() {
+        if (player.getPlayingTrack() == null && !queue.isEmpty()) {
+            if (player.isPaused()) player.setPaused(false);
+            nextTrack();
+        }
     }
 
     public synchronized void clearQueue() {
@@ -42,20 +40,34 @@ public class TrackHandler extends AudioEventAdapter {
     }
 
     public synchronized void stopAll() {
-        queue.clear();
+        clearQueue();
         player.stopTrack();
         player.setPaused(false);
     }
 
-    // for skip
     public synchronized AudioTrack nextTrack() {
-        var next = queue.poll();
-        if (next == null) {
-            player.stopTrack();
-            return null;
-        }
+        AudioTrack next = queue.advance();
         player.startTrack(next, false);
         return next;
+    }
+
+    public PlaylistWindow playlistWindow(AudioTrack playing) {
+        return queue.window(playing);
+    }
+
+    public synchronized boolean jumpToPlaylistTrack(String playlistId, int index) {
+        AudioTrack playing = player.getPlayingTrack();
+        PlaylistWindow window = queue.window(playing);
+        if (window != null && window.playlistId().equals(playlistId) && index == window.currentIndex()) {
+            return true;
+        }
+
+        AudioTrack next = queue.jump(window, playlistId, index);
+        if (next == null) return false;
+
+        player.startTrack(next, false);
+        if (player.isPaused()) player.setPaused(false);
+        return true;
     }
 
     @Override
@@ -64,16 +76,25 @@ public class TrackHandler extends AudioEventAdapter {
                 + ", title=" + track.getInfo().title
                 + ", uri=" + track.getInfo().uri);
         if (endReason.mayStartNext) {
-            var started = nextTrack();
-            if (started == null) {
-                audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);
-            }
-        } else {
-            if (player.getPlayingTrack() == null && queue.isEmpty()) {
-                audio.MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);
-            }
+            // LavaPlayer can dispatch this event while holding its track switch lock.
+            CompletableFuture.runAsync(() -> advanceAfterEnd(track));
+            return;
         }
-        audio.MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
+        if (player.getPlayingTrack() == null && queue.isEmpty()) {
+            MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);
+        }
+        MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
+    }
+
+    private synchronized void advanceAfterEnd(AudioTrack ended) {
+        if (player.getPlayingTrack() != null) return;
+
+        if (queue.isCurrent(ended) && nextTrack() != null) return;
+
+        if (queue.isEmpty()) {
+            MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);
+        }
+        MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
     }
 
     @Override
@@ -103,8 +124,8 @@ public class TrackHandler extends AudioEventAdapter {
 
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
-        audio.MusicCore.getInstance().cancelAfkDisconnectByPlayer(player);
-        audio.MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
+        MusicCore.getInstance().cancelAfkDisconnectByPlayer(player);
+        MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
     }
     // little change
 }

@@ -1,7 +1,7 @@
 package commands.play;
 
 import audio.MusicCore;
-import audio.TrackUtils;
+import audio.playback.TrackUtils;
 import audio.youTube.YtDlpResolvedTrack;
 import audio.youTube.YtDlpResolver;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
@@ -179,7 +179,7 @@ public final class PlayUseCase {
             return new PlayResult.Failure(PlayResult.FailureReason.NO_MATCHES);
         }
 
-        guildHandler.getScheduler().queueAll(tracks);
+        guildHandler.getScheduler().queuePlaylist(tracks);
         musicCore.cancelAfkDisconnect(guildId);
         return new PlayResult.PlaylistQueued(playlist.getName(), tracks.size());
     }
