@@ -6,6 +6,7 @@ import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import com.sedmelluq.discord.lavaplayer.track.InternalAudioTrack;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -110,7 +111,8 @@ public class TrackHandler extends AudioEventAdapter {
                 + ", uri=" + track.getInfo().uri);
         if (endReason.mayStartNext) {
             // LavaPlayer can dispatch this event while holding its track switch lock.
-            CompletableFuture.runAsync(() -> advanceAfterEnd(track, endReason));
+            boolean failed = failedToLoad(track, endReason);
+            CompletableFuture.runAsync(() -> advanceAfterEnd(track, failed));
             return;
         }
         if (player.getPlayingTrack() == null && queue.isEmpty()) {
@@ -119,11 +121,11 @@ public class TrackHandler extends AudioEventAdapter {
         MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
     }
 
-    private synchronized void advanceAfterEnd(AudioTrack ended, AudioTrackEndReason reason) {
+    private synchronized void advanceAfterEnd(AudioTrack ended, boolean failed) {
         if (player.getPlayingTrack() != null) return;
 
         if (queue.isCurrent(ended)) {
-            AudioTrack next = reason == AudioTrackEndReason.LOAD_FAILED
+            AudioTrack next = failed
                     ? queue.retryOrAdvance() : queue.finish();
             player.startTrack(next, false);
             if (next != null) return;
@@ -133,6 +135,16 @@ public class TrackHandler extends AudioEventAdapter {
             MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);
         }
         MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
+    }
+
+    private boolean failedToLoad(AudioTrack track, AudioTrackEndReason reason) {
+        if (reason == AudioTrackEndReason.LOAD_FAILED) return true;
+        if (track instanceof InternalAudioTrack internal && internal.getActiveExecutor() != null) {
+            // LavaPlayer can publish FINISHED before reporting a loading exception.
+            var buffer = internal.getActiveExecutor().getAudioBuffer();
+            return buffer != null && !buffer.hasReceivedFrames();
+        }
+        return false;
     }
 
     @Override
