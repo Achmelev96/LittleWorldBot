@@ -1,7 +1,7 @@
 package musicpanel;
 
-import audio.playback.PlaylistWindow;
-import audio.youTube.YtDlpResolvedTrack;
+import audio.GuildHandler;
+import audio.YtDlpResolvedTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import localization.BotLanguage;
@@ -11,8 +11,6 @@ import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
 
 public final class MusicPanelRenderer {
     private static final Color PANEL_COLOR = new Color(88, 101, 242);
@@ -22,7 +20,8 @@ public final class MusicPanelRenderer {
         this.messages = messages;
     }
 
-    public EmbedBuilder buildEmbed(AudioTrack track, BotLanguage language) {
+    public EmbedBuilder buildEmbed(GuildHandler handler, BotLanguage language) {
+        AudioTrack track = handler.getPlayer().getPlayingTrack();
         AudioTrackInfo info = track.getInfo();
         YtDlpResolvedTrack resolved = track.getUserData(YtDlpResolvedTrack.class);
         String title = resolved == null ? info.title : resolved.title();
@@ -47,25 +46,16 @@ public final class MusicPanelRenderer {
         return embed;
     }
 
-    public List<ActionRow> buildControls(
-            boolean paused, String token, PlaylistWindow playlist, String openPlaylistId, BotLanguage language
-    ) {
+    public ActionRow buildControls(GuildHandler handler, String token) {
         String prefix = "music:" + token + ":";
-        List<Button> buttons = new ArrayList<>();
-        buttons.add(paused
+        Button playPause = handler.getPlayer().isPaused()
                 ? Button.success(prefix + "toggle", "▶ Play")
-                : Button.primary(prefix + "toggle", "⏸ Pause"));
-        buttons.add(Button.secondary(prefix + "skip", "⏭ Skip"));
-        if (playlist != null) {
-            buttons.add(Button.secondary(prefix + "list", "List"));
-        }
-        buttons.add(Button.secondary(prefix + "menu", "☰"));
-
-        ActionRow controls = ActionRow.of(buttons);
-        if (playlist != null && playlist.playlistId().equals(openPlaylistId)) {
-            return List.of(controls, PlaylistMenu.build(prefix + "playlist", playlist, language, messages));
-        }
-        return List.of(controls);
+                : Button.primary(prefix + "toggle", "⏸ Pause");
+        return ActionRow.of(
+                playPause,
+                Button.secondary(prefix + "skip", "⏭ Skip"),
+                Button.secondary(prefix + "menu", "☰")
+        );
     }
 
     private String safeTitle(String title, BotLanguage language) {

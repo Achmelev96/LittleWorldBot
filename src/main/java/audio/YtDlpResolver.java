@@ -1,18 +1,10 @@
-package audio.youTube;
-
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
-import com.sedmelluq.discord.lavaplayer.track.BasicAudioPlaylist;
-import net.dv8tion.jda.api.utils.data.DataObject;
+package audio;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -57,44 +49,7 @@ public final class YtDlpResolver {
         return CompletableFuture.supplyAsync(() -> resolveBlocking(identifier), executor);
     }
 
-    public CompletionStage<AudioPlaylist> resolvePlaylist(String identifier, AudioPlayerManager playerManager) {
-        return CompletableFuture.supplyAsync(() -> {
-            validateExecutable();
-            String output = run(List.of(
-                    executable.toString(),
-                    "--encoding", "utf-8",
-                    "--yes-playlist",
-                    "--flat-playlist",
-                    "--skip-download",
-                    "--no-warnings",
-                    "--no-progress",
-                    "--dump-single-json",
-                    "--", identifier
-            ));
-            DataObject playlist = DataObject.fromJson(output);
-            var entries = playlist.getArray("entries");
-            List<AudioTrack> tracks = new ArrayList<>();
-            for (int index = 0; index < entries.length(); index++) {
-                if (entries.isNull(index)) continue;
-
-                DataObject entry = entries.getObject(index);
-                String id = entry.getString("id", "");
-                if (!id.matches("[A-Za-z0-9_-]{11}")) continue;
-
-                String url = "https://youtube.com/watch?v=" + id;
-                AudioTrackInfo info = new AudioTrackInfo(
-                        entry.getString("title", id),
-                        entry.getString("uploader", "Unknown artist"),
-                        Math.round(entry.getDouble("duration", 0) * 1_000),
-                        url, false, url
-                );
-                tracks.add(new YtDlpPlaylistTrack(info, this, playerManager));
-            }
-            return new BasicAudioPlaylist(playlist.getString("title", "YouTube"), tracks, null, false);
-        }, executor);
-    }
-
-    YtDlpResolvedTrack resolveBlocking(String identifier) {
+    private YtDlpResolvedTrack resolveBlocking(String identifier) {
         validateExecutable();
         String ytDlpIdentifier = identifier.startsWith("ytsearch:")
                 ? "ytsearch1:" + identifier.substring("ytsearch:".length())
@@ -110,10 +65,6 @@ public final class YtDlpResolver {
                 "--", ytDlpIdentifier
         );
 
-        return parseOutput(run(command));
-    }
-
-    private String run(List<String> command) {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.environment().put("PYTHONUTF8", "1");
         processBuilder.environment().put("PYTHONIOENCODING", "utf-8");
@@ -138,7 +89,7 @@ public final class YtDlpResolver {
                 throw new YtDlpException("yt-dlp exited with code " + process.exitValue()
                         + formatDetails(errorOutput));
             }
-            return standardOutput;
+            return parseOutput(standardOutput);
         } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
             process.destroyForcibly();

@@ -4,7 +4,6 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 public final class UrlUtils {
@@ -20,7 +19,7 @@ public final class UrlUtils {
 
     static String getHostLower(URI uri) {
         String host = uri.getHost();
-        return host == null ? "" : host.toLowerCase(Locale.ROOT);
+        return host == null ? "" : host.toLowerCase();
     }
 
     static String getPathOrEmpty(URI uri) {
@@ -39,7 +38,7 @@ public final class UrlUtils {
 
     static String getQueryParam(URI uri, String key) {
         if (uri == null) return null;
-        Map<String, String> params = parseQuery(uri.getRawQuery());
+        Map<String, String> params = parseQuery(uri.getQuery());
         return params.get(key);
     }
 
@@ -78,7 +77,7 @@ public final class UrlUtils {
         parameters.remove("feature");
         parameters.remove("si");
         parameters.remove("t");
-
+        parameters.remove("start_radio");
 
         return parameters;
     }

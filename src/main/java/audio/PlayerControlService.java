@@ -1,24 +1,30 @@
-package audio.playback;
+package audio;
 
-import audio.GuildHandler;
-import audio.MusicCore;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
 public final class PlayerControlService {
 
     private PlayerControlService() {
     }
 
-    public static TrackHandler.SkipResult skip(GuildHandler handler) {
-        var result = handler.getScheduler().skip(handler.getPlayer().getPlayingTrack());
-        if (!result.skipped()) return result;
+    public static SkipResult skip(GuildHandler handler) {
+        var player = handler.getPlayer();
+        var scheduler = handler.getScheduler();
 
-        if (result.current() == null) {
+        AudioTrack previous = player.getPlayingTrack();
+        if (previous == null) {
+            return new SkipResult(null, null);
+        }
+
+        AudioTrack next = scheduler.nextTrack();
+
+        if (next == null) {
             MusicCore.getInstance().scheduleAfkDisconnect(handler.getGuild().getIdLong());
         } else {
             MusicCore.getInstance().cancelAfkDisconnect(handler.getGuild().getIdLong());
         }
 
-        return result;
+        return new SkipResult(previous, next);
     }
 
     public static boolean togglePause(GuildHandler handler) {
@@ -33,4 +39,9 @@ public final class PlayerControlService {
         return paused;
     }
 
+    public record SkipResult(AudioTrack previous, AudioTrack current) {
+        public boolean skipped() {
+            return previous != null;
+        }
+    }
 }

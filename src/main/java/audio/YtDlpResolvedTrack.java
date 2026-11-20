@@ -1,4 +1,4 @@
-package audio.youTube;
+package audio;
 
 public record YtDlpResolvedTrack(
         String title,
