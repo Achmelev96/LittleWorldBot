@@ -1,6 +1,9 @@
 package app;
 
 import audio.MusicCore;
+import commands.repeat.RepeatButtonHandler;
+import commands.repeat.RepeatUseCase;
+import voice.VoiceStateValidator;
 import commands.publisher.CommandPublisher;
 import commands.publisher.CommandRegistryFactory;
 import commands.routers.AutocompleteRouter;
@@ -40,7 +43,8 @@ public final class BotBootstrap {
                 panelService,
                 languageService,
                 new SettingsAccessPolicy(Config.getLongOrDefault("BOT_OWNER_ID", 0L)),
-                messages
+                messages,
+                new RepeatButtonHandler(new RepeatUseCase(musicCore, new VoiceStateValidator()), messages, panelService)
         );
 
         var registry = CommandRegistryFactory.create(musicCore, messages, panelService);

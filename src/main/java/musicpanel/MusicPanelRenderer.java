@@ -1,6 +1,7 @@
 package musicpanel;
 
 import audio.playback.PlaylistWindow;
+import audio.playback.RepeatMode;
 import audio.youTube.YtDlpResolvedTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
@@ -48,22 +49,33 @@ public final class MusicPanelRenderer {
     }
 
     public List<ActionRow> buildControls(
-            boolean paused, String token, PlaylistWindow playlist, String openPlaylistId, BotLanguage language
+            boolean paused, String token, PlaylistWindow playlist, String openPlaylistId,
+            RepeatMode repeatMode, BotLanguage language
     ) {
         String prefix = "music:" + token + ":";
         List<Button> buttons = new ArrayList<>();
         buttons.add(paused
-                ? Button.success(prefix + "toggle", "▶ Play")
-                : Button.primary(prefix + "toggle", "⏸ Pause"));
-        buttons.add(Button.secondary(prefix + "skip", "⏭ Skip"));
+                ? Button.success(prefix + "toggle", "▶\uFE0E")
+                : Button.primary(prefix + "toggle", "⏸\uFE0E"));
+        buttons.add(Button.secondary(prefix + "skip", "⏭\uFE0E"));
+        String repeat = "↻";
+        buttons.add(switch (repeatMode) {
+            case OFF -> Button.secondary(prefix + "repeat", repeat);
+            case ONCE -> Button.primary(prefix + "repeat", repeat);
+            case LOOP -> Button.success(prefix + "repeat", repeat);
+        });
         if (playlist != null) {
-            buttons.add(Button.secondary(prefix + "list", "List"));
+            buttons.add(Button.secondary(prefix + "list", playlist.playlistId().equals(openPlaylistId) ? "▴" : "▾"));
         }
         buttons.add(Button.secondary(prefix + "menu", "☰"));
 
         ActionRow controls = ActionRow.of(buttons);
         if (playlist != null && playlist.playlistId().equals(openPlaylistId)) {
-            return List.of(controls, PlaylistMenu.build(prefix + "playlist", playlist, language, messages));
+            return List.of(
+                    controls,
+                    PlaylistMenu.build(prefix + "playlist", playlist, language, messages),
+                    ActionRow.of(Button.secondary(prefix + "skip-playlist:" + playlist.playlistId(), "Skip playlist"))
+            );
         }
         return List.of(controls);
     }

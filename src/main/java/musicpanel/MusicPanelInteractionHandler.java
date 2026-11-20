@@ -3,6 +3,8 @@ package musicpanel;
 import audio.GuildHandler;
 import audio.MusicCore;
 import audio.playback.PlayerControlService;
+import commands.repeat.RepeatButtonHandler;
+import voice.CurrentStatus;
 import localization.BotLanguage;
 import localization.MessageCatalog;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
@@ -23,19 +25,22 @@ public final class MusicPanelInteractionHandler {
     private final GuildLanguageService languageService;
     private final SettingsAccessPolicy accessPolicy;
     private final MessageCatalog messages;
+    private final RepeatButtonHandler repeatHandler;
 
     public MusicPanelInteractionHandler(
             MusicCore musicCore,
             MusicPanelService panelService,
             GuildLanguageService languageService,
             SettingsAccessPolicy accessPolicy,
-            MessageCatalog messages
+            MessageCatalog messages,
+            RepeatButtonHandler repeatHandler
     ) {
         this.musicCore = musicCore;
         this.panelService = panelService;
         this.languageService = languageService;
         this.accessPolicy = accessPolicy;
         this.messages = messages;
+        this.repeatHandler = repeatHandler;
     }
 
     public void handle(ButtonInteractionEvent event) {
@@ -52,13 +57,27 @@ public final class MusicPanelInteractionHandler {
             openLanguageMenu(event, guild);
             return;
         }
-        if (!"toggle".equals(id[2]) && !"skip".equals(id[2]) && !"list".equals(id[2])) return;
+        if ("repeat".equals(id[2])) {
+            repeatHandler.handle(event, CurrentStatus.from(event, languageFor(guild)));
+            return;
+        }
+        boolean skipPlaylist = id[2].startsWith("skip-playlist:");
+        if (!"toggle".equals(id[2]) && !"skip".equals(id[2]) && !"list".equals(id[2]) && !skipPlaylist) return;
         if (!isInBotVoiceChannel(event.getMember(), guild)) {
             replyEphemeral(event, languageFor(guild), "panel.same_channel_required");
             return;
         }
 
         GuildHandler handler = musicCore.getGuildHandler(guild);
+        if (skipPlaylist) {
+            if (handler.getScheduler().skipPlaylist(id[2].substring("skip-playlist:".length()))) {
+                event.deferEdit().queue();
+            } else {
+                replyEphemeral(event, languageFor(guild), "panel.playlist_changed");
+            }
+            panelService.refresh(guild);
+            return;
+        }
         if ("list".equals(id[2])) {
             var playlist = handler.getScheduler().playlistWindow(handler.getPlayer().getPlayingTrack());
             if (playlist == null) {

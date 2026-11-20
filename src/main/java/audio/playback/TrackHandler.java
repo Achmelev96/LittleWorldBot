@@ -6,6 +6,7 @@ import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import com.sedmelluq.discord.lavaplayer.track.InternalAudioTrack;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -13,9 +14,6 @@ import java.util.concurrent.CompletableFuture;
 public class TrackHandler extends AudioEventAdapter {
     private final AudioPlayer player;
     private final PlaybackQueue queue = new PlaybackQueue();
-
-    private AudioTrack skipTarget;
-    private AudioTrack failedSkipTarget;
 
     public TrackHandler(AudioPlayer player) {
         this.player = player;
@@ -40,8 +38,6 @@ public class TrackHandler extends AudioEventAdapter {
 
     public synchronized void clearQueue() {
         queue.clear();
-        skipTarget = null;
-        failedSkipTarget = null;
     }
 
     public synchronized void stopAll() {
@@ -51,24 +47,36 @@ public class TrackHandler extends AudioEventAdapter {
     }
 
     public synchronized AudioTrack nextTrack() {
-        skipTarget = null;
-        failedSkipTarget = null;
         AudioTrack next = queue.advance();
         player.startTrack(next, false);
         return next;
     }
 
     public synchronized SkipResult skip(AudioTrack expected) {
-        AudioTrack previous = expected == null ? failedSkipTarget : expected;
+        AudioTrack previous = expected;
         if (previous == null || !queue.isCurrent(previous)) {
             return new SkipResult(null, null);
         }
 
-        AudioTrack next = queue.advance();
-        failedSkipTarget = null;
-        skipTarget = queue.isPlaylistTrack(next) ? next : null;
+        AudioTrack next = queue.skip();
         player.startTrack(next, false);
         return new SkipResult(previous, next);
+    }
+
+    public synchronized boolean skipPlaylist(String playlistId) {
+        if (!queue.discardPlaylist(playlistId, player.getPlayingTrack())) return false;
+
+        nextTrack();
+        if (player.isPaused()) player.setPaused(false);
+        return true;
+    }
+
+    public RepeatMode getRepeatMode() {
+        return queue.repeatMode();
+    }
+
+    public synchronized RepeatMode cycleRepeat() {
+        return queue.cycleRepeat(player.getPlayingTrack());
     }
 
     public record SkipResult(AudioTrack previous, AudioTrack current) {
@@ -91,8 +99,6 @@ public class TrackHandler extends AudioEventAdapter {
         AudioTrack next = queue.jump(window, playlistId, index);
         if (next == null) return false;
 
-        skipTarget = null;
-        failedSkipTarget = null;
         player.startTrack(next, false);
         if (player.isPaused()) player.setPaused(false);
         return true;
@@ -105,7 +111,8 @@ public class TrackHandler extends AudioEventAdapter {
                 + ", uri=" + track.getInfo().uri);
         if (endReason.mayStartNext) {
             // LavaPlayer can dispatch this event while holding its track switch lock.
-            CompletableFuture.runAsync(() -> advanceAfterEnd(track, endReason));
+            boolean failed = failedToLoad(track, endReason);
+            CompletableFuture.runAsync(() -> advanceAfterEnd(track, failed));
             return;
         }
         if (player.getPlayingTrack() == null && queue.isEmpty()) {
@@ -114,23 +121,30 @@ public class TrackHandler extends AudioEventAdapter {
         MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
     }
 
-    private synchronized void advanceAfterEnd(AudioTrack ended, AudioTrackEndReason reason) {
+    private synchronized void advanceAfterEnd(AudioTrack ended, boolean failed) {
         if (player.getPlayingTrack() != null) return;
 
         if (queue.isCurrent(ended)) {
-            if (ended == skipTarget && reason == AudioTrackEndReason.LOAD_FAILED) {
-                // A manual skip should attempt just one playlist entry.
-                skipTarget = null;
-                failedSkipTarget = ended;
-            } else if (nextTrack() != null) {
-                return;
-            }
+            AudioTrack next = failed
+                    ? queue.retryOrAdvance() : queue.finish();
+            player.startTrack(next, false);
+            if (next != null) return;
         }
 
         if (queue.isEmpty()) {
             MusicCore.getInstance().scheduleAfkDisconnectByPlayer(player);
         }
         MusicCore.getInstance().notifyPlaybackStateChangedByPlayer(player);
+    }
+
+    private boolean failedToLoad(AudioTrack track, AudioTrackEndReason reason) {
+        if (reason == AudioTrackEndReason.LOAD_FAILED) return true;
+        if (track instanceof InternalAudioTrack internal && internal.getActiveExecutor() != null) {
+            // LavaPlayer can publish FINISHED before reporting a loading exception.
+            var buffer = internal.getActiveExecutor().getAudioBuffer();
+            return buffer != null && !buffer.hasReceivedFrames();
+        }
+        return false;
     }
 
     @Override
