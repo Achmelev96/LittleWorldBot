@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.managers.AudioManager;
 
@@ -38,6 +39,10 @@ public class CurrentStatus {
     }
 
     public static CurrentStatus from(CommandAutoCompleteInteractionEvent event, BotLanguage language) {
+        return build(event.getJDA(), event.getGuild(), event.getMember(), language);
+    }
+
+    public static CurrentStatus from(ButtonInteractionEvent event, BotLanguage language) {
         return build(event.getJDA(), event.getGuild(), event.getMember(), language);
     }
 

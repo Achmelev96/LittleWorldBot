@@ -126,7 +126,7 @@ public final class MusicPanelService {
         BotLanguage language = languageService.getLanguage(guild.getIdLong());
         channel.sendMessageEmbeds(renderer.buildEmbed(track, language).build())
                 .setComponents(renderer.buildControls(handler.getPlayer().isPaused(), token,
-                        handler.getScheduler().playlistWindow(track), state.openPlaylistId, language))
+                        handler.getScheduler().playlistWindow(track), state.openPlaylistId, handler.getScheduler().getRepeatMode(), language))
                 .queue(message -> onCreated(guild, state, message), error -> {
                     System.err.println("[MusicPanel] Could not create panel for guild " + guild.getId());
                     error.printStackTrace();
@@ -158,7 +158,7 @@ public final class MusicPanelService {
         BotLanguage language = languageService.getLanguage(guild.getIdLong());
         message.editMessageEmbeds(renderer.buildEmbed(track, language).build())
                 .setComponents(renderer.buildControls(handler.getPlayer().isPaused(), token,
-                        handler.getScheduler().playlistWindow(track), state.openPlaylistId, language))
+                        handler.getScheduler().playlistWindow(track), state.openPlaylistId, handler.getScheduler().getRepeatMode(), language))
                 .queue(ignored -> {
                     boolean refreshAgain;
                     synchronized (state) {

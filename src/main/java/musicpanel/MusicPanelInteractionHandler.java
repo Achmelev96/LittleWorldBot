@@ -3,6 +3,8 @@ package musicpanel;
 import audio.GuildHandler;
 import audio.MusicCore;
 import audio.playback.PlayerControlService;
+import commands.repeat.RepeatButtonHandler;
+import voice.CurrentStatus;
 import localization.BotLanguage;
 import localization.MessageCatalog;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
@@ -23,19 +25,22 @@ public final class MusicPanelInteractionHandler {
     private final GuildLanguageService languageService;
     private final SettingsAccessPolicy accessPolicy;
     private final MessageCatalog messages;
+    private final RepeatButtonHandler repeatHandler;
 
     public MusicPanelInteractionHandler(
             MusicCore musicCore,
             MusicPanelService panelService,
             GuildLanguageService languageService,
             SettingsAccessPolicy accessPolicy,
-            MessageCatalog messages
+            MessageCatalog messages,
+            RepeatButtonHandler repeatHandler
     ) {
         this.musicCore = musicCore;
         this.panelService = panelService;
         this.languageService = languageService;
         this.accessPolicy = accessPolicy;
         this.messages = messages;
+        this.repeatHandler = repeatHandler;
     }
 
     public void handle(ButtonInteractionEvent event) {
@@ -50,6 +55,10 @@ public final class MusicPanelInteractionHandler {
 
         if ("menu".equals(id[2])) {
             openLanguageMenu(event, guild);
+            return;
+        }
+        if ("repeat".equals(id[2])) {
+            repeatHandler.handle(event, CurrentStatus.from(event, languageFor(guild)));
             return;
         }
         boolean skipPlaylist = id[2].startsWith("skip-playlist:");

@@ -14,9 +14,6 @@ public class TrackHandler extends AudioEventAdapter {
     private final AudioPlayer player;
     private final PlaybackQueue queue = new PlaybackQueue();
 
-    private AudioTrack skipTarget;
-    private AudioTrack failedSkipTarget;
-
     public TrackHandler(AudioPlayer player) {
         this.player = player;
     }
@@ -40,8 +37,6 @@ public class TrackHandler extends AudioEventAdapter {
 
     public synchronized void clearQueue() {
         queue.clear();
-        skipTarget = null;
-        failedSkipTarget = null;
     }
 
     public synchronized void stopAll() {
@@ -51,22 +46,18 @@ public class TrackHandler extends AudioEventAdapter {
     }
 
     public synchronized AudioTrack nextTrack() {
-        skipTarget = null;
-        failedSkipTarget = null;
         AudioTrack next = queue.advance();
         player.startTrack(next, false);
         return next;
     }
 
     public synchronized SkipResult skip(AudioTrack expected) {
-        AudioTrack previous = expected == null ? failedSkipTarget : expected;
+        AudioTrack previous = expected;
         if (previous == null || !queue.isCurrent(previous)) {
             return new SkipResult(null, null);
         }
 
-        AudioTrack next = queue.advance();
-        failedSkipTarget = null;
-        skipTarget = queue.isPlaylistTrack(next) ? next : null;
+        AudioTrack next = queue.skip();
         player.startTrack(next, false);
         return new SkipResult(previous, next);
     }
@@ -77,6 +68,14 @@ public class TrackHandler extends AudioEventAdapter {
         nextTrack();
         if (player.isPaused()) player.setPaused(false);
         return true;
+    }
+
+    public RepeatMode getRepeatMode() {
+        return queue.repeatMode();
+    }
+
+    public synchronized RepeatMode cycleRepeat() {
+        return queue.cycleRepeat(player.getPlayingTrack());
     }
 
     public record SkipResult(AudioTrack previous, AudioTrack current) {
@@ -99,8 +98,6 @@ public class TrackHandler extends AudioEventAdapter {
         AudioTrack next = queue.jump(window, playlistId, index);
         if (next == null) return false;
 
-        skipTarget = null;
-        failedSkipTarget = null;
         player.startTrack(next, false);
         if (player.isPaused()) player.setPaused(false);
         return true;
@@ -126,13 +123,10 @@ public class TrackHandler extends AudioEventAdapter {
         if (player.getPlayingTrack() != null) return;
 
         if (queue.isCurrent(ended)) {
-            if (ended == skipTarget && reason == AudioTrackEndReason.LOAD_FAILED) {
-                // A manual skip should attempt just one playlist entry.
-                skipTarget = null;
-                failedSkipTarget = ended;
-            } else if (nextTrack() != null) {
-                return;
-            }
+            AudioTrack next = reason == AudioTrackEndReason.LOAD_FAILED
+                    ? queue.retryOrAdvance() : queue.finish();
+            player.startTrack(next, false);
+            if (next != null) return;
         }
 
         if (queue.isEmpty()) {
